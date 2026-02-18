@@ -1,0 +1,102 @@
+specification {
+    element actor {
+        style {
+            shape person
+            color secondary
+        }
+    }
+    element system
+    element component
+}
+
+model {
+    showcaller = actor 'Showcaller / Reżyser' {
+        description 'Podejmuje decyzje live — obsługuje panel operatora (setup, live, post-show)'
+    }
+
+    audioTechnician = actor 'Technik Audio' {
+        description 'Konfiguruje źródło audio na venue, monitoruje status połączenia'
+    }
+
+    vpsProvider = system 'VPS Provider (Hetzner)' {
+        description 'Docker Compose na VPS (4 vCPU, 8 GB RAM)'
+    }
+
+    objectStorage = system 'Object Storage' {
+        description 'Backup DB, raporty PDF (R2/Spaces)'
+    }
+
+    errorTracking = system 'Sentry' {
+        description 'Error tracking backend + frontend'
+    }
+
+    stageBrain = system 'StageBrain' {
+        description 'System wsparcia decyzyjnego w czasie rzeczywistym dla showcallera'
+
+        operatorPanel = component 'Operator Panel (React SPA)' {
+            description 'Panel operatora: setup pre-show, live monitoring (engagement, rekomendacje, czas), post-show analytics. Ciemny motyw, duże elementy dotykowe.'
+        }
+
+        audioSource = component 'Audio Source (Browser)' {
+            description 'Strona przeglądarkowa na laptopie przy venue. Web Audio API przechwytuje audio z mikrofonu i wysyła binary chunki przez WebSocket.'
+        }
+
+        api = component 'FastAPI Backend' {
+            description 'REST API + WebSocket endpoints + audio processing pipeline + ML inference + logika biznesowa'
+        }
+
+        worker = component 'Background Worker (Celery/arq)' {
+            description 'Generowanie raportów PDF, eksport CSV/JSON — operacje asynchroniczne'
+        }
+
+        db = component 'PostgreSQL + TimescaleDB' {
+            description 'Źródło prawdy: dane relacyjne (shows, setlists, venues) + time-series (engagement_metrics hypertable)'
+        }
+
+        redis = component 'Redis 7' {
+            description 'Pub/sub broadcast metryk engagement, cache stanu live, opcjonalnie task queue'
+        }
+
+        caddy = component 'Caddy (Reverse Proxy)' {
+            description 'HTTPS z automatycznym SSL (Let''s Encrypt), routing do API i SPA'
+        }
+    }
+
+    // Aktorzy → System
+    showcaller -> stageBrain.operatorPanel 'Obsługuje panel: setup, live, post-show (HTTPS)'
+    audioTechnician -> stageBrain.audioSource 'Konfiguruje mikrofon, monitoruje status (HTTPS)'
+
+    // Frontend → Backend
+    stageBrain.operatorPanel -> stageBrain.caddy 'HTTPS'
+    stageBrain.audioSource -> stageBrain.caddy 'HTTPS + WSS'
+    stageBrain.caddy -> stageBrain.api 'HTTP + WS (reverse proxy)'
+
+    // Backend → Data
+    stageBrain.api -> stageBrain.db 'SQL (asyncpg)'
+    stageBrain.api -> stageBrain.redis 'Pub/sub publish + cache read/write'
+    stageBrain.worker -> stageBrain.db 'SQL (raporty, eksport)'
+    stageBrain.worker -> stageBrain.redis 'Dequeue tasks'
+
+    // External
+    stageBrain.api -> errorTracking 'Error reporting (SDK)'
+    stageBrain.operatorPanel -> errorTracking 'Error reporting (JS SDK)'
+    stageBrain.worker -> objectStorage 'Upload raportów PDF, backupów'
+
+    // Hosting
+    stageBrain.api -> vpsProvider 'Docker container'
+    stageBrain.worker -> vpsProvider 'Docker container'
+    stageBrain.db -> vpsProvider 'Docker container (volume)'
+    stageBrain.redis -> vpsProvider 'Docker container'
+}
+
+views {
+    view c4_container {
+        title 'StageBrain — C4 Container'
+        include showcaller
+        include audioTechnician
+        include stageBrain.*
+        include vpsProvider
+        include objectStorage
+        include errorTracking
+    }
+}

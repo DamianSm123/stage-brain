@@ -1,0 +1,67 @@
+model {
+    extend stageBrain.api {
+        core = component 'Core' {
+            description 'Konfiguracja (pydantic-settings), DB session (SQLAlchemy 2.0), auth middleware, health check, shared base models'
+        }
+
+        audioModule = component 'Audio Module' {
+            description 'WebSocket ingest (binary PCM/Opus), ring buffer (okna 5-10s), librosa feature extraction (RMS, spectral centroid, ZCR), YAMNet klasyfikacja zdarzeń (TFLite/ONNX)'
+        }
+
+        engagementModule = component 'Engagement Module' {
+            description 'Agregacja metryk z audio pipeline do engagement score (0-1), kalibracja per venue, trend analysis (rising/falling/stable), normalizacja'
+        }
+
+        recommendationsModule = component 'Recommendations Module' {
+            description 'LightGBM ranking segmentów, feature engineering, fallback regułowy, wyjaśnialność rekomendacji (reason), log rekomendacji + decyzji operatora'
+        }
+
+        setlistModule = component 'Setlist Module' {
+            description 'CRUD setlisty, import CSV, zarządzanie segmentami i wariantami (full/short), reordering'
+        }
+
+        showsModule = component 'Shows Module' {
+            description 'Show lifecycle (setup→live→paused→ended), timeline (start/end/skip segment), kontrola czasu, prognoza curfew, scenariusze odzysku, tagi operatora'
+        }
+
+        analyticsModule = component 'Analytics Module' {
+            description 'Post-show analytics (engagement timeline, per-segment stats), eksport CSV/JSON, generowanie raportów PDF (Celery/arq task)'
+        }
+
+        websocketModule = component 'WebSocket Module' {
+            description 'WebSocket handlers: audio ingest stream, live panel broadcast (engagement, rekomendacje, czas, alerty). Reconnect, snapshot po reconnect.'
+        }
+    }
+
+    // Audio flow
+    stageBrain.api.audioModule -> stageBrain.api.engagementModule 'Raw features (RMS, spectral, YAMNet classes)'
+    stageBrain.api.engagementModule -> stageBrain.api.recommendationsModule 'Engagement score + trend'
+    stageBrain.api.engagementModule -> stageBrain.redis 'Pub/sub: publish engagement update'
+    stageBrain.api.engagementModule -> stageBrain.db 'Zapis metryk (engagement_metrics hypertable)'
+
+    // WebSocket broadcast
+    stageBrain.api.websocketModule -> stageBrain.redis 'Subscribe to engagement channel'
+    stageBrain.api.websocketModule -> stageBrain.api.recommendationsModule 'Get recommendations'
+    stageBrain.api.websocketModule -> stageBrain.api.showsModule 'Get time status'
+
+    // Data persistence
+    stageBrain.api.core -> stageBrain.db 'DB session management'
+    stageBrain.api.setlistModule -> stageBrain.db 'CRUD setlisty, segmenty'
+    stageBrain.api.showsModule -> stageBrain.db 'Show timeline, tagi, stan'
+    stageBrain.api.recommendationsModule -> stageBrain.db 'Log rekomendacji, decyzje'
+    stageBrain.api.analyticsModule -> stageBrain.db 'Query analytics, aggregates'
+
+    // Worker
+    stageBrain.worker -> stageBrain.redis 'Dequeue tasks (raporty, eksport)'
+    stageBrain.worker -> stageBrain.db 'Query dane do raportów'
+}
+
+views {
+    view c4_component_backend_api {
+        title 'StageBrain — C4 Component (FastAPI Backend)'
+        include stageBrain.api.*
+        include stageBrain.db
+        include stageBrain.redis
+        include stageBrain.worker
+    }
+}

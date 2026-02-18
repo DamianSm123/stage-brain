@@ -1,0 +1,44 @@
+model {
+    showcaller = actor 'Showcaller / Reżyser' {
+        description 'Podejmuje decyzje w czasie rzeczywistym podczas koncertu. Główny użytkownik panelu operatora.'
+    }
+
+    audioTechnician = actor 'Technik Audio' {
+        description 'Ustawia i monitoruje źródło audio na venue (mikrofon, laptop).'
+    }
+
+    stageBrain = system 'StageBrain' {
+        description 'System wsparcia decyzyjnego w czasie rzeczywistym. Analizuje audio publiczności, oblicza engagement, rekomenduje kolejność utworów, monitoruje czas do curfew.'
+    }
+
+    vpsProvider = system 'VPS Provider (Hetzner/DO)' {
+        description 'Hosting infrastruktury — Docker Compose na VPS'
+    }
+
+    objectStorage = system 'Object Storage (R2/Spaces)' {
+        description 'Przechowywanie backupów bazy danych i raportów PDF'
+    }
+
+    errorTracking = system 'Sentry' {
+        description 'Error tracking i monitoring błędów (backend + frontend)'
+    }
+
+    showcaller -> stageBrain 'Obsługuje panel: setup, live monitoring, post-show analytics'
+    audioTechnician -> stageBrain 'Konfiguruje i monitoruje źródło audio na venue'
+
+    stageBrain -> vpsProvider 'Hosting (Docker Compose)'
+    stageBrain -> objectStorage 'Backup bazy danych, raporty PDF'
+    stageBrain -> errorTracking 'Raportowanie błędów'
+}
+
+views {
+    view c4_context {
+        title 'StageBrain — C4 Context'
+        include showcaller
+        include audioTechnician
+        include stageBrain
+        include vpsProvider
+        include objectStorage
+        include errorTracking
+    }
+}
