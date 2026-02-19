@@ -1,0 +1,12 @@
+.git
+.claude
+ai
+docs
+node_modules
+__pycache__
+*.pyc
+.venv
+venv
+.env
+.DS_Store
+*.md

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+venv/
+*.egg
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Build
+apps/web/dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Docker
+docker-compose.override.yml
+
+# ML models (large binaries)
+apps/api/models/*.onnx
+apps/api/models/*.tflite
+
+# Reports
+reports/
+
+# Database
+pgdata/
+redisdata/

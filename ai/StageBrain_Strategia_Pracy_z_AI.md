@@ -54,7 +54,7 @@
 - `Dockerfile.api` (Python 3.12, FastAPI)
 - `Dockerfile.web` (Node 22, Vite)
 - `apps/api/pyproject.toml` z zależnościami
-- `apps/web/package.json` z zależnościami
+- `apps/web/package.json` z zależnościami (w tym shadcn/ui)
 
 **Output**: `docker compose up` buduje i uruchamia 4 kontenery. Każdy loguje "ready".
 
@@ -92,26 +92,30 @@ GET /docs → Swagger UI
 
 ---
 
-#### Sesja 3 — React boilerplate + ciemny motyw
+#### Sesja 3 — React boilerplate + shadcn/ui + ciemny motyw
 **Typ**: F | **Czas**: ~1.5h | **Faza planu**: 0
 
 **Scope**:
 - Vite + React 19 + TypeScript 5.x konfiguracja
 - Tailwind CSS 4 z ciemnym motywem (domyślny)
+- **shadcn/ui**: inicjalizacja (`npx shadcn@latest init`), dark theme jako default
+  - Bazowe komponenty: `Button`, `Card`, `Badge`, `Input`, `Label`, `Separator`
+  - Te komponenty będą rozszerzane w kolejnych sesjach wg potrzeb
 - Routing (React Router): `/setup`, `/live`, `/audio-source`, `/post-show`
-- Layout: sidebar/header, responsywny (tablet 10"+)
+- Layout: sidebar/header, responsywny (tablet 10"+), zbudowany na shadcn `Card` i `Separator`
 - Zustand — pusty store (placeholder)
-- Placeholder pages (4 strony z tytułem i opisem)
-- Komponent: `StatusBadge` (online/offline)
+- Placeholder pages (4 strony z tytułem i opisem, shadcn `Card` jako wrapper)
+- Komponent: `StatusBadge` (online/offline) — oparty na shadcn `Badge`
 - Komponent: `PageLayout` (wrapper z nawigacją)
 
-**Output**: SPA z nawigacją między 4 stronami, ciemny motyw, responsywny layout.
+**Output**: SPA z nawigacją między 4 stronami, ciemny motyw (shadcn/ui), responsywny layout.
 
 **Weryfikacja**:
 ```
 npm run dev → działa
 Nawigacja między stronami → poprawna
-Ciemny motyw → czytelny
+Ciemny motyw (shadcn dark) → czytelny
+shadcn komponenty renderują się poprawnie
 Tablet view (Chrome DevTools) → layout ok
 ```
 

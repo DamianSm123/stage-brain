@@ -165,10 +165,18 @@ StageBrain to **system wsparcia decyzyjnego w czasie rzeczywistym** dla showcall
 | `react` 19 + `typescript` 5.x | Framework + type safety |
 | `vite` | Build tool (szybki HMR) |
 | `tailwindcss` | Utility-first CSS, ciemny motyw natywnie |
+| `shadcn/ui` | Design system — gotowe, dostępne komponenty (Radix UI + Tailwind). Ciemny motyw natywnie. Komponenty kopiowane do projektu (pełna kontrola nad kodem). |
 | `zustand` | State management (lekki, prosty) |
 | `recharts` lub `visx` | Wykresy engagement timeline |
 | `@tanstack/react-table` | Setlista, logi, dane tabelaryczne |
 | `openapi-typescript` + `openapi-fetch` | Generowane typy i klient API z OpenAPI spec backendu |
+
+**Dlaczego shadcn/ui:**
+- Oparty na Radix UI — dostępność (a11y) i duże touch targets out of the box
+- Tailwind-native — spójna integracja ze stylem projektu, zero konfliktu CSS
+- Ciemny motyw jako default — kluczowe dla backstage (ciemne otoczenie)
+- Nie jest biblioteką npm — komponenty kopiowane do `src/components/ui/`, pełna kontrola nad customizacją
+- Podejście code-first do UI: shadcn daje profesjonalny design system od razu, iterujemy wizualnie bez Figmy
 
 **Bridge backend ↔ frontend:**
 FastAPI natywnie generuje OpenAPI spec → `openapi-typescript` generuje typy TS → frontend ma type safety bez ręcznego utrzymywania DTO. Zmiana modelu w Pydantic → automatyczna aktualizacja typów w React.
@@ -809,6 +817,7 @@ Architektura MVP jest zaprojektowana z myślą o ewolucji:
 | Frontend language | TypeScript | 5.x | Type safety |
 | Frontend build | Vite | latest | Build + HMR |
 | Frontend styling | Tailwind CSS | 4.x | Utility-first CSS |
+| Frontend UI components | shadcn/ui (Radix UI) | latest | Design system, dostępne komponenty, dark mode |
 | Frontend state | Zustand | latest | State management |
 | Frontend charts | Recharts lub visx | latest | Engagement visualization |
 | Frontend tables | TanStack Table | latest | Setlist, logs |
