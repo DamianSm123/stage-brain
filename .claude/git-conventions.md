@@ -26,6 +26,7 @@ Zasady:
 - Maksymalnie **72 znaki** w pierwszej linii
 - Opcjonalnie dłuższy opis po pustej linii
 - Nie kończyć kropką
+- **NIE dodawaj** `Co-Authored-By` ani żadnych trailerów wskazujących na AI
 
 ## Nazewnictwo Branchy
 
