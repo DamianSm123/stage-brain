@@ -47,137 +47,88 @@ Decyzje, które warunkują wszystko inne. Rozstrzygnij je najpierw.
 
 ---
 
-### Sesja 1: Stack technologiczny — Backend
+### Sesja 1: Stack technologiczny — Backend ✅
 
-**Cel:** Wybrać język, framework i runtime dla backendu.
+**Status:** Rozstrzygnięta (2026-02-18)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §3.1
 
-**Kontekst:**
-- System real-time z wymaganiem low-latency
-- Pipeline audio processing (feature extraction, detekcja zdarzeń)
-- Komponent ML (engagement score, ranking utworów) — Wariant B
-- Deadline: 10 tygodni do pilota
-- ADR w `docs/02-architecture/adr/` sugeruje NestJS — zweryfikować, czy to świadomy wybór czy template z innego projektu
+**Podsumowanie decyzji:**
 
-**Pytania do rozstrzygnięcia:**
+1. **Python 3.12+ / FastAPI** — natywny ekosystem ML/audio, najprostszy framework backendowy, AI generuje mniej błędów
+2. **Deweloper = frontend dev (React/TS)** — backend w całości pisany przez AI, deweloper reviewuje
+3. **Mono-repo** — `apps/api/`, `apps/web/`, `packages/`, `infra/`
+4. **ML w tym samym procesie** — jeden serwis, zero integracji między językami
+5. ADR w `docs/` to template OpsDesk (NestJS) — nieaktualne, decyzja to FastAPI
 
-1. Jaki język/framework? Kandydaci:
-   - **TypeScript + NestJS** — modularność, ekosystem Node.js, duży rynek developerów
-   - **Python + FastAPI** — natywne wsparcie ML/audio (librosa, numpy, scikit-learn, TensorFlow), ale GIL i concurrency
-   - **Go** — wydajność, prostota, ale mniejszy ekosystem ML
-   - **Hybrid** — np. Python dla audio/ML pipeline + TypeScript dla API/biznes logic — czy warto komplikować?
-2. Kto będzie w zespole developerskim? Jakie kompetencje mają dostępni ludzie?
-3. Mono-repo czy poly-repo?
-4. Runtime: Node.js vs Bun vs Deno (jeśli TypeScript)?
-5. Czy ML model będzie trenowany i serwowany w tym samym procesie, czy osobno (np. jako mikroserwis, MLflow, osobny kontener Python)?
-
-**Deliverable:** ADR z wyborem stacku backend + uzasadnienie.
+**Odrzucone alternatywy:** NestJS (złożone patterns, słaby ekosystem audio/ML), Hybrid TS+Python (dwa serwisy = więcej błędów), Go (brak ekosystemu ML), Django (synchroniczny)
 
 ---
 
-### Sesja 2: Stack technologiczny — Frontend
+### Sesja 2: Stack technologiczny — Frontend ✅
 
-**Cel:** Wybrać framework, podejście renderowania i bibliotekę UI dla panelu operatora.
+**Status:** Rozstrzygnięta (2026-02-18, uzupełniona 2026-02-19)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §3.2
 
-**Kontekst:**
-- Panel musi być **stress-resistant**: duże elementy, czytelny pod presją, ciemny backstage
-- Urządzenie: tablet lub laptop backstage, potencjalnie słaby/niestabilny internet
-- Real-time updates: engagement score, timer, rekomendacje aktualizują się co kilka sekund
-- Dwa tryby panelu: live (podczas show) i post-show (analiza po koncercie)
+**Podsumowanie decyzji:**
 
-**Pytania do rozstrzygnięcia:**
+1. **React 19 (SPA)** + TypeScript 5.x + Vite — deweloper zna React/TS, SSR niepotrzebne (nie SEO app)
+2. **Tailwind CSS 4** + **shadcn/ui** (Radix UI pod spodem) — ciemny motyw natywnie, dostępne komponenty, duże touch targets, pełna kontrola nad kodem (komponenty kopiowane do projektu)
+3. **Recharts lub visx** — wykresy engagement timeline
+4. **TanStack Table** — setlista, logi, dane tabelaryczne
+5. **Zustand** — lekki state management
+6. **openapi-typescript + openapi-fetch** — generowane typy i klient API z OpenAPI spec backendu
+7. **Dark mode jako default** — backstage jest ciemny
+8. **Tablet-first** — min. 48px touch targets, responsywny layout
+9. **Podejście code-first do UI** — shadcn/ui daje profesjonalny design system od razu, bez Figmy, iterujemy wizualnie
 
-1. Framework UI:
-   - **React + Next.js** — dojrzały ekosystem, SSR, łatwy deployment
-   - **React (SPA)** — prostsze, wystarczające dla narzędzia produkcyjnego
-   - **SvelteKit** — lżejszy, szybszy, mniejszy bundle (ważne przy słabym internecie)
-   - **SolidJS** — reaktywność bez virtual DOM, najlepsze performance, ale mały ekosystem
-2. Podejście renderowania: SPA vs SSR vs static + client hydration?
-3. Biblioteka komponentów i styling:
-   - Tailwind CSS + shadcn/ui (headless, customizable)
-   - Radix UI + custom styles
-   - MUI / Chakra (gotowe, ale cięższe)
-4. Biblioteka wykresów/wizualizacji (engagement curve, timeline):
-   - Recharts, visx, Chart.js, D3, lightweight custom canvas?
-5. Responsywność: tablet-first? Desktop-first? Oba z breakpointami?
-6. Dark mode jako default (backstage jest ciemny)?
-7. PWA / offline cache (jako minimum, bez pełnego trybu offline z Wariantu C)?
-
-**Deliverable:** ADR z wyborem stacku frontend + design system decisions.
+**Odrzucone alternatywy:** Next.js (SSR niepotrzebne), Vue 3 (mniejszy ekosystem wizualizacji), SvelteKit (mniejszy ekosystem), MUI/Chakra (cięższe, mniej kontroli)
 
 ---
 
-### Sesja 3: Architektura systemu — wzorzec i struktura
+### Sesja 3: Architektura systemu — wzorzec i struktura ✅
 
-**Cel:** Zdefiniować wzorzec architektoniczny, podział na moduły/domeny i sposób komunikacji.
+**Status:** Rozstrzygnięta (2026-02-18)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §5, §6
 
-**Zależności:** Sesja 1 i 2 (znamy stack)
+**Podsumowanie decyzji:**
 
-**Kontekst:**
-- 10-tygodniowy MVP — nie czas na overengineering
-- Ale system musi być rozszerzalny o Wariant C (edge/offline, role, hardening) bez przepisywania
-- Dokumentacja w `docs/02-architecture/c4/` ma diagramy C4 — zweryfikować aktualność
+1. **Modular monolith** — jeden serwis FastAPI, zero integracji między serwisami
+2. **Podział na moduły** w `apps/api/src/`:
+   - `audio/` — ingest, feature extraction, YAMNet
+   - `engagement/` — scoring, kalibracja, trend
+   - `recommendations/` — ML ranking (LightGBM), rekomendacje
+   - `setlist/` — zarządzanie setlistą, import, warianty
+   - `shows/` — koncerty, timeline, kontrola czasu, tagi
+   - `analytics/` — post-show, raporty, eksport
+   - `websocket/` — WebSocket handlers (audio ingest + live panel)
+   - `core/` — konfiguracja, DB, auth, utils
+3. **Komunikacja wewnętrzna**: direct imports + Redis pub/sub dla real-time broadcast
+4. **Audio/ML pipeline**: w tym samym procesie, CPU-intensive przez ProcessPoolExecutor
+5. **Jeden gateway**: FastAPI eksponuje wszystkie endpointy, moduły to pakiety Python
+6. Diagramy C4: `docs/02-architecture/c4/` to template OpsDesk — **do usunięcia/przepisania**
 
-**Pytania do rozstrzygnięcia:**
-
-1. Wzorzec architektoniczny:
-   - **Modular monolith** — jeden deployment, wyraźne granice modułów (bezpieczne dla MVP)
-   - **Modular monolith z event bus** — jak wyżej + asynchroniczna komunikacja (przygotowanie pod rozbicie)
-   - **Microservices** — osobne serwisy od startu (zbyt ryzykowne przy 10-tygodniowym deadline?)
-2. Podział na moduły/domeny (bounded contexts). Propozycja:
-   - `show` — setlista, segmenty, warianty, metadane
-   - `audio` — ingest, buforowanie, feature extraction
-   - `engagement` — scoring, kalibracja, trend detection
-   - `time` — timeline, curfew, prognoza, scenariusze odzysku
-   - `recommendations` — ranking utworów, ML model, rule engine
-   - `operator` — UI backend, WebSocket, manual tags
-   - `analytics` — logi, post-show, eksport, raporty
-   - `auth` — uwierzytelnianie (podstawowe)
-3. Komunikacja wewnętrzna między modułami:
-   - Direct imports / function calls
-   - In-process event bus (EventEmitter / mediator pattern)
-   - Message queue (Redis, NATS, RabbitMQ) — od razu czy dopiero jak się rozrośnie?
-4. Jak oddzielić audio/ML pipeline od reszty systemu (osobny proces? worker thread? osobny kontener)?
-5. Warstwa API: jeden gateway czy każdy moduł eksponuje swoje endpointy?
-
-**Deliverable:** Diagram C4 (context + container), mapa modułów, ADR z wzorcem.
+**Odrzucone:** Microservices (zbyt ryzykowne na 10 tyg.), osobny ML serwis (niepotrzebna złożoność)
 
 ---
 
-### Sesja 4: Baza danych i model danych
+### Sesja 4: Baza danych i model danych 🟡
 
-**Cel:** Wybrać bazę (lub bazy), zaprojektować model domenowy i strategię migracji.
+**Status:** Częściowo rozstrzygnięta (2026-02-18)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §3.3, §4
 
-**Zależności:** Sesja 3 (znamy moduły)
+**Co rozstrzygnięte:**
 
-**Pytania do rozstrzygnięcia:**
+1. **PostgreSQL 16 + TimescaleDB** (extension, nie osobna baza)
+2. **TimescaleDB hypertable** na `engagement_metrics` (automatyczne partycjonowanie po czasie)
+3. **SQLAlchemy 2.0** (async) + **Alembic** (migracje) + **asyncpg** (driver)
+4. **Tabele zdefiniowane** (high-level): venues, shows, setlists, segments, segment_variants, show_timeline, engagement_metrics, recommendations_log, operator_tags, calibration_presets, reports
+5. **Stany**: segment (`planned→active→completed|skipped`), show (`setup→live→paused→ended`)
 
-1. Główna baza danych:
-   - **PostgreSQL** — relacyjna, solidna, JSONB dla elastycznych danych, rozszerzenia (TimescaleDB)
-   - **MongoDB** — dokumentowa, elastyczny schemat, ale słabsze relacje
-   - **SQLite** — zero-ops, lokalna (przyszłe offline w Wariancie C), ale ograniczenia concurrency
-2. Dane time-series (engagement score co 5-10s, audio features):
-   - W tej samej bazie co reszta (PostgreSQL z TimescaleDB)?
-   - Osobna baza (InfluxDB, QuestDB)?
-   - Osobna tabela z partycjonowaniem po show_id + timestamp?
-3. Model domenowy — kluczowe encje:
-   - `Show` (wydarzenie) → `Setlist` → `Song` → `SongVariant` (full/short/acoustic)
-   - `Segment` (blok setlisty) → `SegmentItem` (pozycja w segmencie)
-   - `Venue` (obiekt) + `VenueCalibration`
-   - `EngagementSnapshot` (time-series: timestamp, score, features)
-   - `TimelineEvent` (start/stop utworu, opóźnienie, manual tag, decyzja)
-   - `Recommendation` (co system zasugerował, co operator wybrał)
-   - `ShowReport` (post-show analytics)
-4. Relacje i ograniczenia:
-   - Song ↔ warianty (1:N)
-   - Song ↔ zależności między utworami (M:N z typem: "musi po", "nie może obok")
-   - Show ↔ timeline events (1:N, append-only)
-5. ORM vs query builder vs raw SQL:
-   - Prisma, Drizzle, TypeORM, Sequelize (jeśli TS)
-   - SQLAlchemy, Tortoise (jeśli Python)
-6. Strategia migracji schematu (schema migrations)?
-7. Seedowanie danych testowych — jak symulować koncert?
-
-**Deliverable:** ER diagram, schema SQL/Prisma, ADR z wyborem bazy.
+**Co do doprecyzowania przy implementacji (sesja impl. 4):**
+- Szczegółowe kolumny i typy danych per tabela
+- Indeksy i constrainty
+- Seedowanie danych testowych
+- ER diagram (powstanie z kodu SQLAlchemy)
 
 ---
 
@@ -230,150 +181,77 @@ Projektowanie poszczególnych podsystemów. Wymaga rozstrzygniętych fundamentó
 
 ---
 
-### Sesja 6: Audio pipeline — ingest i przetwarzanie
+### Sesja 6: Audio pipeline — ingest i przetwarzanie 🟡
 
-**Cel:** Zaprojektować cały pipeline od mikrofonu do metryki w bazie.
+**Status:** Częściowo rozstrzygnięta (2026-02-18)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §3.5, §3.9
 
-**Zależności:** Sesja 1 (stack backend), Sesja 4 (baza)
+**Co rozstrzygnięte:**
 
-**Kontekst:**
-- To **największe ryzyko techniczne** projektu — jakość sygnału, latency, różnice venue
-- Dokumentacja mówi: okna 5-10s, audio z ambient / audience mic / FOH feed
-- Feature extraction: cechy akustyczne + detekcja zdarzeń (oklaski, śpiew, krzyk, skandowanie, cisza)
+1. **WebSocket binary stream** — chunki audio co 5-10s przez `ws://api/v1/audio/stream`
+2. **Web Audio API + MediaRecorder** w przeglądarce Chrome na laptopie przy FOH
+3. **Format**: PCM 16-bit, 16kHz, mono (~32 kbps). Z przeglądarki: Opus/WebM → serwer dekoduje do PCM
+4. **Ring buffer** w pamięci, okna 5-10s
+5. **librosa**: RMS Energy, Spectral Centroid, Zero-Crossing Rate, Spectral Rolloff
+6. **YAMNet** (TFLite/ONNX): klasyfikacja zdarzeń (Applause, Cheering, Crowd, Silence, Music)
+7. **Latency target**: < 15s end-to-end (5-10s okno + processing + broadcast)
+8. **Fallback**: prosty Python script (pyaudio + websocket-client) jeśli przeglądarka nie wystarczy
+9. **ProcessPoolExecutor** dla CPU-intensive obliczeń (mitygacja GIL)
 
-**Pytania do rozstrzygnięcia:**
-
-1. Jak audio trafia do systemu?
-   - Streaming z mikrofonu (WebRTC, RTMP, WebSocket binary)?
-   - Upload chunków (HTTP POST co 5-10s)?
-   - Dedykowane urządzenie / Raspberry Pi z lokalnym pre-processingiem?
-   - Bezpośrednio z miksera (dante, audio-over-IP)?
-2. Format i jakość audio:
-   - Sample rate (16kHz wystarczy? 44.1kHz? 48kHz?)
-   - Mono vs stereo?
-   - Kodek: WAV/PCM (bezstratny), Opus (kompresja), MP3?
-   - Rozmiar okna: 5s, 10s, inny?
-3. Buforowanie:
-   - Ring buffer w pamięci?
-   - Kolejka (Redis, RabbitMQ)?
-   - Zapis na dysk jako fallback?
-4. Feature extraction — jakie cechy wyciągać?
-   - Energetyczne: RMS energy, zero-crossing rate, spectral flux
-   - Spektralne: spectral centroid, bandwidth, MFCCs
-   - Event detection: onset detection, voice activity detection (VAD)
-   - Detekcja typów dźwięku: oklaski, śpiew zbiorowy, krzyk, cisza
-5. Narzędzia / biblioteki:
-   - **librosa** (Python) — standard, ale wolny bez GPU
-   - **essentia** (C++/Python) — szybki, music-oriented
-   - **TensorFlow/PyTorch audio** — jeśli potrzebne głębokie modele
-   - **Web Audio API** — preprocessing na kliencie przed wysyłką?
-   - **FFmpeg** — transkodowanie i pre-processing
-6. Latency budget:
-   - Ile ms od dźwięku w hali do metryki na ekranie operatora?
-   - Gdzie jest największy bottleneck (sieć? processing? UI rendering)?
-   - Target: < 15s end-to-end? < 30s?
-7. Jak testować pipeline bez koncertu?
-   - Nagrania z przeszłych eventów?
-   - Syntetyczne dane audio?
-   - Nagrania z YouTube/Spotify audience recordings?
-
-**Deliverable:** Diagram pipeline (od mic do bazy), ADR z wyborem narzędzi, latency budget, plan testowania.
+**Co do doprecyzowania przy implementacji (sesje impl. 8-9):**
+- Szczegóły dekodowania Opus/WebM → PCM na serwerze
+- Konfiguracja ring buffer (rozmiar, overlap okien)
+- Testowanie z różnymi źródłami audio (mikrofon ambient, audience mic, FOH feed — do ustalenia z TINAP)
+- Syntetyczne dane audio do testów pipeline
 
 ---
 
-### Sesja 7: Engagement score — metryka energii
+### Sesja 7: Engagement score — metryka energii 🟡
 
-**Cel:** Zdefiniować, jak liczbowo wyrazić "energię publiczności".
+**Status:** Częściowo rozstrzygnięta (2026-02-18)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §3.5
 
-**Zależności:** Sesja 6 (mamy features z audio pipeline)
+**Co rozstrzygnięte:**
 
-**Kontekst:**
-- Engagement score to kluczowy wskaźnik, na którym opiera się reszta systemu
-- Wariant B wymaga **kalibracji per venue/gatunek**
-- Score musi być zrozumiały dla showcallera (nie abstrakcyjna liczba)
+1. **Engagement score v1**: ważona suma (prosta formuła na start, iteracja po danych z testów)
+   ```
+   engagement_score = f(rms_energy_normalized, spectral_brightness,
+                        crowd_event_type, crowd_event_confidence,
+                        trend_last_3_windows, venue_calibration_offset)
+   ```
+2. **Kalibracja manualna przed show**: operator wybiera preset (typ venue, pojemność, gatunek) + ręczne nadpisanie parametrów
+3. **Presety**: hala, stadion, klub, open air — ustawiają baseline energy threshold, czułość klasyfikatora, normalizację głośności
+4. **Trend**: rosnący/malejący/stabilny (ostatnie 3 okna)
 
-**Pytania do rozstrzygnięcia:**
-
-1. Definicja metryki:
-   - Jedno-wymiarowy score (0-100)? Skala jakościowa (low/medium/high)?
-   - Multi-wymiarowy (energia + nastrój)? Zbyt skomplikowane dla MVP?
-   - Bazowy score + delta/trend (rośnie/maleje/stabilny)?
-2. Jakie cechy audio wchodzą w skład score?
-   - Głośność publiczności (RMS po odseparowaniu muzyki)
-   - Częstotliwość zdarzeń (oklaski/krzyk na minutę)
-   - Śpiew zbiorowy (korelacja z melodią utworu)
-   - Cisza / brak reakcji
-   - Proporcja typów zdarzeń (krzyk vs rozmowy)
-3. Agregacja:
-   - Rolling window (ostatnie 30s? 60s? 120s?)
-   - Exponential moving average (świeższe dane ważniejsze)?
-   - Per-utwór vs ciągły?
-4. Kalibracja per venue:
-   - Co dokładnie kalibrujemy? (baseline noise, peak capacity, acoustic gain)
-   - Kiedy kalibracja się odbywa? (soundcheck? pierwsze minuty show? manualnie?)
-   - Workflow kalibracji — jak wygląda dla operatora?
-5. Kalibracja per gatunek:
-   - Hip-hop vs pop vs rock vs elektronika — inne baseline'y energii
-   - Profile gatunkowe: predefiniowane czy tworzone per artysta?
-6. Normalizacja:
-   - Jak porównać koncert 500 osób z koncertem 50 000?
-   - Relative scoring (vs. baseline tego show) czy absolute?
-7. Walidacja:
-   - Jak sprawdzić, czy score jest "poprawny"?
-   - Porównanie z subiektywną oceną showcallera po fakcie?
-   - Annotated dataset: nagranie + ludzka etykieta "tu była wysoka energia"?
-
-**Deliverable:** Wzór/algorytm engagement score, strategia kalibracji, plan walidacji, ADR.
+**Co do doprecyzowania przy implementacji (sesja impl. 9):**
+- Dokładne wagi formuły engagement score
+- Agregacja: rolling window vs EMA — do ustalenia empirycznie
+- Normalizacja per pojemność venue
+- Walidacja: porównanie z oceną showcallera po pilocie
+- Profile gatunkowe: predefiniowane presety vs per-artysta
 
 ---
 
-### Sesja 8: Silnik rekomendacji i ML
+### Sesja 8: Silnik rekomendacji i ML 🟡
 
-**Cel:** Zaprojektować mechanizm rankingu utworów i rekomendacji.
+**Status:** Częściowo rozstrzygnięta (2026-02-18)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §3.6
 
-**Zależności:** Sesja 7 (mamy engagement score)
+**Co rozstrzygnięte:**
 
-**Kontekst:**
-- Wariant A: reguły (if-then). Wariant B: ML — ale "ML" to szerokie pojęcie
-- System rekomenduje, nie decyduje (human-in-the-loop)
-- Musi uwzględniać: engagement, czas, dramaturgię, ograniczenia techniczne
+1. **LightGBM** — gradient boosting, szybki, interpretowalny
+2. **Hybrid approach**: ML + fallback regułowy (jeśli confidence < threshold)
+3. **Features per utwór**: energia engagement, trend (3 okna), pozycja w setliście, historyczna skuteczność, wariant full/short, tempo/BPM, gatunek, kontrast vs poprzedni segment
+4. **Target**: "skuteczność" = zmiana engagement score po zagraniu utworu
+5. **Cold start**: dane syntetyczne + reguły eksperckie od TINAP, potem fine-tune na realnych danych
+6. **Model w procesie backendowym** (nie osobny serwis)
+7. **Log rekomendacji + decyzji operatora** → feedback loop do treningu
 
-**Pytania do rozstrzygnięcia:**
-
-1. Rule engine (baza):
-   - Jakie reguły twarde (constraints)? Np.: "po pirotechnice nie może być akustyczny", "hit X nie może być pominięty"
-   - Jakie reguły miękkie (preferencje)? Np.: "po spadku energii sugeruj banger"
-   - Format reguł — hardcoded, konfiguracja JSON, DSL?
-2. ML model (Wariant B):
-   - Co model predykuje? (engagement delta po zagraniu utworu X w kontekście Y?)
-   - Jakie features wchodzą do modelu?
-     - Aktualny engagement score + trend
-     - Pozycja w setliście (ile zostało)
-     - Czas do curfew
-     - Historia zagranych utworów w tym show
-     - Metadane utworu (BPM, gatunek, energy label)
-     - Dane historyczne z poprzednich koncertów
-   - Jaki typ modelu?
-     - Gradient boosting (XGBoost, LightGBM) — szybki, interpretowalny
-     - Neural network — więcej danych potrzeba
-     - Bandit / reinforcement learning — uczy się na bieżąco
-   - Gdzie model działa? (w procesie backendowym? osobny serwis? pre-computed scores?)
-3. Cold start:
-   - Nowy artysta, zero danych historycznych — jak wtedy?
-   - Fallback na reguły + ogólne profile gatunkowe?
-4. Prezentacja rekomendacji:
-   - Top N utworów z scoring/ranking?
-   - Score + uzasadnienie (dlaczego ten utwór?)
-   - Scenariusze ("jeśli X to..., jeśli Y to...")
-5. Feedback loop:
-   - Operator zaakceptował / odrzucił rekomendację → dane treningowe
-   - Jak logować i przetwarzać feedback?
-6. Ewaluacja modelu:
-   - Offline: backtesting na danych historycznych
-   - Online: A/B testing (realistyczne przy 1 koncercie na raz?)
-   - Metryka sukcesu: recommendation acceptance rate? engagement improvement?
-
-**Deliverable:** Architektura silnika rekomendacji, ADR (reguły vs ML vs hybrid), schema feature store.
+**Co do doprecyzowania przy implementacji (sesja impl. 13):**
+- Reguły twarde (constraints) — do ustalenia z TINAP
+- Dokładny format reguł (hardcoded na start, konfiguracja JSON w przyszłości)
+- Prezentacja: top 3-5 z confidence score + expected engagement change
+- Generator danych syntetycznych do pierwszego treningu
 
 ---
 
@@ -421,93 +299,47 @@ Projektowanie poszczególnych podsystemów. Wymaga rozstrzygniętych fundamentó
 
 ---
 
-### Sesja 10: Real-time communication i event architecture
+### Sesja 10: Real-time communication i event architecture ✅
 
-**Cel:** Zaprojektować, jak dane płyną w systemie w czasie rzeczywistym.
+**Status:** Rozstrzygnięta (2026-02-18)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §3.4, §3.7
 
-**Zależności:** Sesja 3 (architektura)
+**Podsumowanie decyzji:**
 
-**Kontekst:**
-- Engagement score, timer, rekomendacje muszą aktualizować się na panelu operatora co kilka sekund
-- Manual tagi od operatora muszą trafiać do systemu natychmiast
-- System musi przetrwać chwilową utratę połączenia
+1. **Natywny WebSocket (FastAPI)** — full-duplex, bidirectional
+   - `ws://api/v1/audio/stream` — venue → serwer (binary PCM/Opus)
+   - `ws://api/v1/live/{show_id}` — serwer ↔ panel (JSON: engagement, rekomendacje, czas, alerty; panel wysyła tagi, akceptacje)
+2. **Redis 7 pub/sub** — event bus wewnętrzny: backend publikuje metryki → Redis channel → WebSocket handler broadcastuje do panelu
+3. **Reconnect strategy**: exponential backoff na kliencie, stan w Redis → po reconnect klient dostaje aktualny snapshot
+4. **Fail-safe**: panel pokazuje ostatni znany stan + "OFFLINE" badge
+5. **Skala MVP**: 1 show, 1-5 operatorów, plain WebSocket wystarczy
 
-**Pytania do rozstrzygnięcia:**
-
-1. Protokół frontend ↔ backend:
-   - **WebSocket** — full-duplex, bidirectional (operator wysyła tagi, otrzymuje updates)
-   - **SSE (Server-Sent Events)** — prostsze, unidirectional (server → client) + REST dla client → server
-   - **Kombinacja**: SSE dla push + REST/WebSocket dla input?
-2. Event bus wewnętrzny (backend):
-   - In-process: EventEmitter / mediator (wystarczające dla monolitha?)
-   - Redis Pub/Sub (lekki, powszechny)
-   - NATS (szybki, cloud-native)
-   - RabbitMQ (feature-rich, ale cięższy)
-3. Kluczowe eventy w systemie:
-   - `audio.chunk.received` → `audio.features.extracted` → `engagement.updated`
-   - `show.song.started` → `show.song.ended` → `time.forecast.updated`
-   - `operator.tag.added` → `show.event.logged`
-   - `recommendation.generated` → `recommendation.accepted` / `recommendation.dismissed`
-   - `time.alert.triggered` (threshold crossed)
-4. Gwarancje dostarczenia:
-   - At-least-once vs at-most-once vs exactly-once?
-   - Ordering: czy kolejność eventów ma znaczenie?
-   - Idempotency: jak obsłużyć duplikaty?
-5. Resilience:
-   - Co gdy WebSocket się rozłączy? Reconnect + missed events?
-   - Backpressure: co gdy frontend nie nadąża z renderowaniem?
-   - Heartbeat / health check?
-6. Skala:
-   - Ile połączeń WebSocket jednocześnie? (1 show = 1-5 operatorów?)
-   - Ile eventów/s? (audio chunk co 5-10s + derived events)
-   - Czy to wymaga dedykowanego rozwiązania, czy plain WebSocket wystarczy?
-
-**Deliverable:** Diagram event flow, lista eventów z payloadami, ADR z wyborem protokołu.
+**Odrzucone:** SSE (brak bidirectionality), NATS/RabbitMQ (overkill), WebRTC (zbyt złożone)
 
 ---
 
-### Sesja 11: Stan live show i fail-safe
+### Sesja 11: Stan live show i fail-safe 🟡
 
-**Cel:** Zaprojektować zarządzanie stanem aktywnego show i zachowanie systemu przy awariach.
+**Status:** Częściowo rozstrzygnięta (2026-02-18)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §3.4, §3.7
 
-**Zależności:** Sesja 4 (baza), Sesja 10 (eventy)
+**Co rozstrzygnięte:**
 
-**Kontekst:**
-- Dokumentacja wielokrotnie podkreśla **fail-safe**: awaria systemu NIE MOŻE blokować koncertu
-- Stan show (aktualny utwór, pozycja w setliście, running timers, skumulowane opóźnienia) jest krytyczny
-- Pytanie: co jeśli serwer się zrestartuje w trakcie koncertu?
+1. **Stan live w Redis** — przeżywa restart backendu, szybki odczyt
+2. **Fail-safe per komponent** (strategia ogólna):
+   - Audio pipeline padł → UI: "brak danych audio", engagement zamrożony
+   - ML model padł → fallback na rule engine
+   - Frontend stracił połączenie → reconnect + snapshot z Redis, "OFFLINE" badge
+   - Cały backend padł → koncert idzie klasycznie (human-in-the-loop)
+3. **Health endpoint** (`/health`) + structured logging (JSON)
+4. **Reconnect**: exponential backoff, po reconnect klient dostaje aktualny snapshot z Redis
 
-**Pytania do rozstrzygnięcia:**
-
-1. Gdzie żyje stan live show?
-   - W pamięci (szybki, ale tracimy przy restarcie)?
-   - W bazie (trwały, ale latency na każdy zapis)?
-   - Hybrid: w pamięci + periodic snapshot do bazy?
-   - Event sourcing: stan odtwarzany z logu eventów?
-2. Recovery po restarcie:
-   - Automatyczne wznowienie z ostatniego snapshotu?
-   - Operator musi ręcznie potwierdzić "tu jesteśmy"?
-   - Ile sekund danych można stracić?
-3. Fail-safe per komponent:
-   - **Audio pipeline padł** → UI pokazuje "brak danych audio", engagement score zamrożony, reszta działa
-   - **ML model padł** → fallback na rule engine
-   - **Baza danych padła** → tymczasowy zapis do pliku/pamięci
-   - **Frontend stracił połączenie** → reconnect + catch-up, UI jasno komunikuje "offline"
-   - **Cały backend padł** → koncert idzie dalej klasycznie, operator przechodzi na backup (papierowa setlista)
-4. Health monitoring (minimum dla MVP):
-   - Health endpoint (`/health`)
-   - Heartbeat na WebSocket
-   - Status komponentów widoczny na panelu operatora
-   - Structured logging (co, kiedy, dlaczego)
-5. Graceful degradation UI:
-   - Jak panel operatora prezentuje częściowe dane?
-   - Które sekcje panelu mogą być "wyszarzone" vs ukryte?
-   - Jasna komunikacja: "Dane audio niedostępne — system działa w trybie ograniczonym"
-6. Pre-show checklist:
-   - Automatyczny test łączności audio → backend → UI przed startem show?
-   - Go/no-go dashboard?
-
-**Deliverable:** Failure mode matrix, strategia state management, diagram graceful degradation, ADR.
+**Co do doprecyzowania przy implementacji (sesja impl. 17):**
+- Częstotliwość snapshot do bazy (co ile sekund?)
+- Recovery flow: automatyczny vs manualny po restarcie
+- Graceful degradation UI: które sekcje wyszarzone vs ukryte
+- Pre-show checklist / go-no-go dashboard
+- Heartbeat na WebSocket (interwał, timeout)
 
 ---
 
@@ -592,51 +424,23 @@ Wszystko, co potrzebne do dostarczenia, przetestowania i uruchomienia systemu.
 
 ---
 
-### Sesja 14: Infrastruktura i deployment
+### Sesja 14: Infrastruktura i deployment ✅
 
-**Cel:** Wybrać hosting, zdefiniować pipeline CI/CD i strategię deploymentu.
+**Status:** Rozstrzygnięta (2026-02-18)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §3.8
 
-**Zależności:** Sesja 3 (architektura)
+**Podsumowanie decyzji:**
 
-**Kontekst:**
-- Budżet: 200-800 PLN/miesiąc (pilot/testy)
-- Koszt per event: kilka-kilkanaście PLN
-- Full observability to Wariant C, ale minimum monitoringu potrzebne
+1. **Hetzner Cloud CPX31** (rekomendacja) — 4 vCPU AMD, 8 GB RAM, 160 GB SSD, ~68 PLN/mies.
+2. **Docker Compose** na VPS — dev i produkcja
+   - Serwisy: api, worker (opcjonalny), web (Nginx), postgres (+TimescaleDB), redis, caddy (reverse proxy + auto SSL)
+3. **GitHub Actions** — lint + test na PR, auto-deploy: build → push images → SSH → pull → up
+4. **Self-hosted baza** na tym samym VPS (PostgreSQL + TimescaleDB w kontenerze)
+5. **Caddy** — reverse proxy + automatyczny SSL (Let's Encrypt)
+6. **Backup**: daily PostgreSQL dump → Object Storage (Hetzner/Cloudflare R2)
+7. **Monitoring minimum**: Sentry (error tracking), Uptime Robot (health), structured logging (JSON)
 
-**Pytania do rozstrzygnięcia:**
-
-1. Cloud provider:
-   - **AWS** — największy ekosystem, dużo managed services, ale pricing
-   - **GCP** — dobry do ML (Vertex AI), Cloud Run
-   - **Hetzner** — tani, europejski, ale mniej managed services
-   - **Fly.io / Railway / Render** — szybki start, prostota, developer-friendly
-   - **VPS (DigitalOcean, Linode)** — pełna kontrola, niski koszt
-2. Containerization:
-   - Docker (obowiązkowe?)
-   - Orchestration: docker-compose (dev/staging) vs Kubernetes (overkill dla MVP?)
-   - Managed containers: ECS, Cloud Run, Fly.io?
-3. CI/CD pipeline:
-   - GitHub Actions / GitLab CI / inne?
-   - Etapy: lint → test → build → deploy
-   - Auto-deploy na staging z `main`? Manual deploy na production?
-4. Environments:
-   - Development (local)
-   - Staging (cloud, mirror prod)
-   - Production
-   - Czy potrzebne review environments (per PR)?
-5. Monitoring minimum (bez full observability z Wariantu C):
-   - Health checks
-   - Error tracking (Sentry?)
-   - Basic metrics (uptime, response time, error rate)
-   - Structured logging (gdzie? CloudWatch, Loki, Betterstack?)
-   - Alerty: kiedy i jak (email, Slack)?
-6. Baza danych hosting:
-   - Managed (RDS, Supabase, Neon, PlanetScale)?
-   - Self-hosted na tym samym serwerze?
-7. DNS, SSL, domena?
-8. Backup strategy?
-
-**Deliverable:** Diagram infrastruktury, koszt estimate, CI/CD pipeline definition, ADR.
+**Odrzucone:** AWS/GCP (za drogo na MVP), Kubernetes (overkill), managed DB (dodatkowy koszt)
 
 ---
 
@@ -683,53 +487,34 @@ Wszystko, co potrzebne do dostarczenia, przetestowania i uruchomienia systemu.
 
 ---
 
-### Sesja 16: Developer experience i projekt setup
+### Sesja 16: Developer experience i projekt setup 🟡
 
-**Cel:** Zdefiniować strukturę repozytorium, tooling i standardy.
+**Status:** Częściowo rozstrzygnięta (2026-02-18)
+**Decyzje:** `ai/StageBrain_Architektura_i_Plan.md` §6
 
-**Zależności:** Sesja 1 (backend), Sesja 2 (frontend), Sesja 3 (architektura)
+**Co rozstrzygnięte:**
 
-**Pytania do rozstrzygnięcia:**
-
-1. Mono-repo vs multi-repo:
-   - Mono-repo: jeden repo, paczki/workspaces (Nx, Turborepo, pnpm workspaces)
-   - Multi-repo: osobne repo na backend, frontend, ML
-   - Przy 10-tygodniowym MVP: mono-repo jest prostsze
-2. Struktura katalogów (propozycja do zweryfikowania):
+1. **Mono-repo** — jedno repozytorium
+2. **Struktura katalogów** zdefiniowana:
    ```
    /apps
-     /api          — backend (NestJS / FastAPI / ...)
-     /web          — frontend (React / Svelte / ...)
-     /ml           — ML pipeline (jeśli osobny)
+     /api          — backend (FastAPI / Python)
+     /web          — frontend (React / TypeScript / Vite / shadcn/ui)
    /packages
-     /shared        — wspólne typy, utils
-     /audio-sdk     — audio processing lib
-   /docs            — dokumentacja
-   /infra           — IaC, docker, CI/CD
+     /shared-types  — schematy API (generowane z OpenAPI)
+   /infra           — Docker, Dockerfiles
+   /ai              — dokumenty projektu
+   /scripts         — narzędzia deweloperskie, seed data
    ```
-3. Coding standards:
-   - Linter: ESLint / Biome / Ruff (Python)?
-   - Formatter: Prettier / Biome?
-   - Pre-commit hooks (Husky + lint-staged)?
-   - Commit convention (Conventional Commits)?
-4. Git workflow:
-   - Trunk-based development (short-lived branches + feature flags)?
-   - GitHub Flow (feature branches + PR)?
-   - Gitflow (overkill dla MVP)?
-5. Dokumentacja techniczna:
-   - Co zostaje z obecnych `docs/` (88 plików, wiele z template OpsDesk)?
-   - Co wyrzucić / przepisać?
-   - ADR format i lokalizacja?
-6. Onboarding:
-   - `README.md` z instrukcją uruchomienia
-   - `docker-compose up` i działa?
-   - Dane seedowe / demo mode?
-7. Dev tooling:
-   - Hot reload (backend + frontend)
-   - Debug config (VSCode launch.json?)
-   - API client (Bruno, Insomnia, HTTPie)?
+3. **`docs/` to template OpsDesk** — do usunięcia/przerobienia (decyzja otwarta, patrz §9.1)
+4. **Docker Compose** do lokalnego developmentu (postgres + redis), backend i frontend odpalane natywnie
 
-**Deliverable:** Zainicjalizowane repo z base config, README, docs cleanup plan.
+**Co do doprecyzowania przy implementacji (sesja impl. 1-3):**
+- Linter/formatter: Ruff (Python), ESLint/Biome (TypeScript) — do decyzji
+- Pre-commit hooks (Husky + lint-staged) — do decyzji
+- Commit convention — patrz `.claude/git-conventions.md`
+- Git workflow — do decyzji (rekomendacja: GitHub Flow)
+- Hot reload config (uvicorn --reload + Vite HMR)
 
 ---
 
@@ -775,37 +560,41 @@ Sesja 15 (Testing) ←── Sesja 6 + 8 + 11   (na końcu, gdy komponenty zapro
 
 ## Checklist postępu
 
-| # | Sesja | Status | ADR / Notatki | Data |
-|---|-------|--------|---------------|------|
-| 1 | Stack backend | ✅ Rozstrzygnięta | `ai/StageBrain_Architektura_i_Plan.md` §3.1 | 2026-02-18 |
-| 2 | Stack frontend | ✅ Rozstrzygnięta | `ai/StageBrain_Architektura_i_Plan.md` §3.2 | 2026-02-18 |
-| 3 | Architektura systemu | ✅ Rozstrzygnięta (high-level) | `ai/StageBrain_Architektura_i_Plan.md` §5, §6 | 2026-02-18 |
-| 4 | Baza danych i model danych | 🟡 Częściowo (wybór bazy, schemat high-level) | `ai/StageBrain_Architektura_i_Plan.md` §3.3, §4 | 2026-02-18 |
-| 5 | Security, auth i prywatność | ⬜ Otwarta (zasygnalizowana, brak decyzji) | — | — |
-| 6 | Audio pipeline | 🟡 Częściowo (narzędzia wybrane, detale do dopracowania) | `ai/StageBrain_Architektura_i_Plan.md` §3.5 | 2026-02-18 |
-| 7 | Engagement score | 🟡 Częściowo (formuła v1, kalibracja manualna) | `ai/StageBrain_Architektura_i_Plan.md` §3.5 | 2026-02-18 |
-| 8 | Silnik rekomendacji i ML | 🟡 Częściowo (LightGBM wybrany, features zarysowane) | `ai/StageBrain_Architektura_i_Plan.md` §3.6 | 2026-02-18 |
-| 9 | Kontrola czasu | ⬜ Otwarta (plan implementacji jest, ale detale algorytmu nie) | — | — |
-| 10 | Real-time communication | ✅ Rozstrzygnięta | `ai/StageBrain_Architektura_i_Plan.md` §3.7 | 2026-02-18 |
-| 11 | Stan live show i fail-safe | 🟡 Częściowo (strategia fail-safe omówiona, detale state mgmt nie) | `ai/StageBrain_Sesja_Architektoniczna_2026-02-18.md` §3.3 | 2026-02-18 |
-| 12 | API design i kontrakty | ⬜ Otwarta (endpointy zarysowane w planie, ale brak OpenAPI spec) | — | — |
-| 13 | Post-show, eksport, raporty | ⬜ Otwarta (zakres opisany, architektura nie) | — | — |
-| 14 | Infrastruktura i deployment | ✅ Rozstrzygnięta | `ai/StageBrain_Architektura_i_Plan.md` §3.8 | 2026-02-18 |
-| 15 | Testing strategy | ⬜ Otwarta | — | — |
-| 16 | Developer experience | ⬜ Otwarta (struktura repo zarysowana) | — | — |
+| # | Sesja | Status | Notatki | Data |
+|---|-------|--------|---------|------|
+| 1 | Stack backend | ✅ Rozstrzygnięta | Python 3.12+ / FastAPI. Patrz §3.1 | 2026-02-18 |
+| 2 | Stack frontend | ✅ Rozstrzygnięta | React 19 / TS / Vite / Tailwind / **shadcn/ui**. Patrz §3.2 | 2026-02-19 |
+| 3 | Architektura systemu | ✅ Rozstrzygnięta | Modular monolith, jeden serwis FastAPI. Patrz §5, §6 | 2026-02-18 |
+| 4 | Baza danych i model danych | 🟡 Wystarczy na start | PostgreSQL 16 + TimescaleDB, SQLAlchemy 2.0. Detale kolumn przy impl. | 2026-02-18 |
+| 5 | Security, auth i prywatność | ⬜ Otwarta | Rekomendacja: prosty JWT, jedno konto. Do rozstrzygnięcia przy sesji impl. 2 | — |
+| 6 | Audio pipeline | 🟡 Wystarczy na start | WebSocket binary, librosa + YAMNet, Web Audio API. Detale przy impl. | 2026-02-18 |
+| 7 | Engagement score | 🟡 Wystarczy na start | Ważona suma v1, kalibracja manualna. Wagi do iteracji po testach | 2026-02-18 |
+| 8 | Silnik rekomendacji i ML | 🟡 Wystarczy na start | LightGBM + fallback regułowy. Features zarysowane | 2026-02-18 |
+| 9 | Kontrola czasu | ⬜ Otwarta | Plan implementacji jest, detale algorytmu przy sesji impl. 12 | — |
+| 10 | Real-time communication | ✅ Rozstrzygnięta | WebSocket (FastAPI) + Redis pub/sub. Patrz §3.4, §3.7 | 2026-02-18 |
+| 11 | Stan live show i fail-safe | 🟡 Wystarczy na start | Stan w Redis, fail-safe per komponent. Detale przy sesji impl. 17 | 2026-02-18 |
+| 12 | API design i kontrakty | ⬜ Otwarta | Endpointy zarysowane, OpenAPI spec generowany automatycznie z FastAPI | — |
+| 13 | Post-show, eksport, raporty | ⬜ Otwarta | Zakres opisany w planie. Architektura przy sesji impl. 15-16 | — |
+| 14 | Infrastruktura i deployment | ✅ Rozstrzygnięta | Hetzner VPS, Docker Compose, Caddy, GitHub Actions. Patrz §3.8 | 2026-02-18 |
+| 15 | Testing strategy | ⬜ Otwarta | Rekomendacja: 70%+ core logic. Do rozstrzygnięcia w trakcie impl. | — |
+| 16 | Developer experience | 🟡 Wystarczy na start | Mono-repo, struktura zdefiniowana. Tooling przy sesji impl. 1 | 2026-02-18 |
 
-> **Uwaga**: Sesje oznaczone ✅ zostały rozstrzygnięte podczas sesji architektonicznej 2026-02-18.
-> Pełne notatki z sesji: `ai/StageBrain_Sesja_Architektoniczna_2026-02-18.md`
-> Decyzje architektoniczne: `ai/StageBrain_Architektura_i_Plan.md`
+> **Referencje:**
+> - Decyzje architektoniczne: `ai/StageBrain_Architektura_i_Plan.md`
+> - Plan sesji implementacyjnych: `ai/StageBrain_Strategia_Pracy_z_AI.md`
+> - Otwarte tematy: `ai/StageBrain_Architektura_i_Plan.md` §9
 
 ---
 
-## Co dodałem względem pierwszej wersji
+## Podejście do otwartych sesji
 
-1. **Sesja 5: Security, auth i prywatność** — nawet MVP potrzebuje loginu i świadomości RODO przy nagrywaniu audio publiczności
-2. **Sesja 9: Kontrola czasu** — wydzielona z sesji rekomendacji, bo to osobny, złożony podsystem
-3. **Sesja 11: Stan live show i fail-safe** — kluczowy temat podkreślany w dokumentacji; jak system przetrwa restart, utratę komponentów, rozłączenie
-4. **Sesja 12: API design** — jawny kontrakt frontend-backend zamiast "jakoś się dogadamy"
-5. **Rozszerzono diagram zależności** — teraz pokazuje dokładnie, co blokuje co
-6. **Tabela równoległości** — widać, które sesje prowadzić jednocześnie
-7. **Checklist postępu** — do śledzenia, co już rozstrzygnięte
+Otwarte sesje (⬜) i częściowo rozstrzygnięte (🟡) **nie blokują implementacji**. Będą doprecyzowywane just-in-time przy odpowiednich sesjach implementacyjnych:
+
+| Sesja architektoniczna | Rozstrzygana przy sesji implementacyjnej |
+|------------------------|------------------------------------------|
+| 5 — Security/auth | Sesja impl. 2 (FastAPI boilerplate) |
+| 9 — Kontrola czasu | Sesja impl. 12 (kontrola czasu + curfew) |
+| 12 — API design | Automatycznie — FastAPI generuje OpenAPI spec |
+| 13 — Post-show | Sesja impl. 15-16 (post-show analytics) |
+| 15 — Testing strategy | Na bieżąco — testy razem z kodem w każdej sesji |
+| 16 — DX (tooling) | Sesja impl. 1 (szkielet monorepo) |

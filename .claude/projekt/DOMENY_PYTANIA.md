@@ -168,13 +168,43 @@ System ma rekomendować, nie decydować. Ale musimy wiedzieć, **na jakiej podst
 ### Pytania:
 
 - Jakie kryteria powinny wpływać na rekomendację kolejnego utworu? (energia, czas, dramaturgiczna krzywa, ograniczenia techniczne?)
+  > **Odp.:** Wszystkie wymienione, z priorytetyzacją zależną od kontekstu. Gdy jest opóźnienie — czas dominuje. Gdy czas jest OK — energia i dramaturgia dominują. Ograniczenia techniczne (pirotechnika załadowana, przebudowa sceny) są zawsze twarde i filtrują opcje przed rankingiem. Kryteria: (1) ograniczenia twarde (czas przygotowania technicznego, zależności między utworami, elementy niepomijalne), (2) czas do curfew i aktualne opóźnienie, (3) aktualny poziom engagement i trend, (4) krzywa dramaturgiczna (kontrast energetyczny vs poprzedni utwór), (5) historyczna skuteczność utworu w podobnym kontekście.
+  > **Dotyczy modułu:** `apps/api/src/recommendations/` — silnik rekomendacji, ważenie kryteriów
+
 - Jak ważyć te kryteria wobec siebie? (co wygrywa — czas czy energia?)
+  > **Odp.:** Dynamiczne ważenie zależne od sytuacji. Gdy opóźnienie < 2 min → czas ma niską wagę, energia i dramaturgia dominują. Gdy opóźnienie 2–5 min → czas i energia mają równą wagę. Gdy opóźnienie > 5 min → czas dominuje, rekomendacje skupiają się na scenariuszach odzysku. Ograniczenia twarde (bezpieczeństwo, kontraktowe, techniczne) zawsze mają najwyższy priorytet — niezależnie od czasu czy energii. Progi powinny być konfigurowalne per show.
+  > **Dotyczy modułu:** `apps/api/src/recommendations/` — algorytm ważenia, konfigurowalne progi
+
 - Czy showcaller chce widzieć jedną rekomendację, top 3, czy pełny ranking?
+  > **Odp. / Decyzja:** Model **"top rekomendacja + 2–3 alternatywy"**. Jedna główna rekomendacja wyświetlana wyraźnie (duża, łatwa do kliknięcia jednym tapem). Poniżej 2–3 alternatywy z jasnym porównaniem. Nigdy więcej niż 4–5 opcji naraz — paraliż decyzyjny pod stresem. Uzasadnienie: (1) w 90% przypadków showcaller weźmie top rekomendację — szybko i bez myślenia, (2) w 10% ma kontekst, którego system nie zna — wtedy scrolluje i wybiera alternatywę, (3) pełny ranking jest zbyt przytłaczający w warunkach backstage.
+  > **Dotyczy modułu:** `apps/web/src/features/live-panel/` — komponent rekomendacji i scenariuszy odzysku czasu
+
 - Jak prezentować "pewność" rekomendacji? (czy system powinien mówić "pewne 85%" vs "sugestia"?)
+  > **Odp.:** Nie pokazywać procenta pewności — showcaller nie ma czasu interpretować "73% vs 81%". Zamiast tego: **poziom ryzyka** przy każdej opcji (niskie / średnie / wysokie), wyrażony kolorem i etykietą. Ryzyko = agregacja czynników: czy utwór jest kontraktowy, czy wymaga przebudowy, jaki wpływ na dramaturgię, czy to testowana opcja (dane historyczne) czy nowa. Dodatkowo przy każdej opcji: krótkie uzasadnienie w 3–5 słowach (np. "sprawdzony banger", "wymaga przebudowy", "niski kontrast energetyczny").
+  > **Dotyczy modułu:** `apps/web/src/features/live-panel/` — wyświetlanie ryzyka i uzasadnień przy rekomendacjach
+
 - Jakie scenariusze odzyskiwania czasu są realistyczne? (skrócenie utworu, pominięcie, zmiana kolejności, skrócenie przerwy?)
+  > **Odp.:** Wszystkie wymienione są realistyczne i powinny być dostępne jako opcje. Przy każdym scenariuszu system pokazuje: (1) **nazwę akcji** — co dokładnie robimy ("Skróć utwór #3 → short", "Pomiń utwór #6"), (2) **oszczędność czasu** w minutach/sekundach — najważniejsza liczba, (3) **czy to wystarczy** — czy ta zmiana zamyka problem, czy trzeba więcej, (4) **poziom ryzyka** — niskie/średnie/wysokie, (5) **wpływ na dramaturgię** — krótki sygnał ("usuwa szczyt energetyczny" / "brak wpływu"). Dodatkowo system powinien umieć prezentować **scenariusze złożone** — kombinację kilku mniejszych zmian, które razem dają wymagany zysk czasowy (np. "Skróć #3 + pomiń interlude + skróć przejście = -5:10"). To jest największa wartość StageBrain — liczy za showcallera.
+  > **Dotyczy modułów:**
+  > - `apps/api/src/shows/` — silnik generowania scenariuszy odzysku czasu
+  > - `apps/web/src/features/live-panel/` — komponent wyświetlania scenariuszy (pojedynczych i złożonych)
+
 - Czy istnieją rekomendacje, które system **nie powinien** dawać? (np. nigdy nie sugeruj pominięcia głównego hitu)
+  > **Odp.:** Tak. System **nigdy** nie sugeruje pominięcia: (1) utworów oznaczonych jako "kontraktowe" (wymóg promotora/sponsora), (2) elementów sponsorskich, (3) utworów powiązanych z pirotechniką już załadowaną (bezpieczeństwo), (4) elementów krytycznie powiązanych z timecode'em (synchronizacja systemów). Te elementy powinny mieć w modelu danych flagę `locked: true` / `skippable: false` i być wizualnie oznaczone w UI (np. ikoną kłódki). Silnik rekomendacji filtruje je przed wygenerowaniem opcji — nigdy nie pojawiają się jako kandydaci do pominięcia.
+  > **Dotyczy modułów:**
+  > - `apps/api/src/setlist/` — model danych: flaga `skippable` na segmencie/wariancie
+  > - `apps/api/src/recommendations/` — filtrowanie zablokowanych elementów
+  > - `apps/web/src/features/live-panel/` — wizualne oznaczenie elementów zablokowanych (ikona kłódki)
+
 - Jak system powinien się zachować, gdy nie ma dobrej opcji?
+  > **Odp.:** System powinien jasno to zakomunikować, a nie na siłę podawać słabą rekomendację. Komunikat w stylu: "Brak opcji odzysku czasu bez wysokiego ryzyka" + lista tego, co sprawdzono i dlaczego nie pasuje. W tej sytuacji showcaller musi eskalować do producenta/artysty — system może to zasugerować. Alternatywnie: pokazać opcje oznaczone jako "wysokie ryzyko" z jasnym ostrzeżeniem, żeby showcaller miał pełen obraz i sam zdecydował. Lepsze "nie wiem, oto sytuacja" niż fałszywie pewna rekomendacja.
+  > **Dotyczy modułu:** `apps/web/src/features/live-panel/` — stan "brak rekomendacji" / tryb eskalacji
+
 - Czy rekomendacje powinny uwzględniać historię z poprzednich koncertów na tej samej trasie?
+  > **Odp.:** Tak — to kluczowa wartość Wariantu B (ML). Dane historyczne z poprzednich koncertów: (1) skuteczność danego utworu w podobnym kontekście (engagement delta po zagraniu), (2) typowy overrun per utwór (czy ten utwór regularnie trwa dłużej niż plan), (3) jakie scenariusze odzysku były stosowane i czy zadziałały. Na start (cold start, brak historii) system działa na regułach + profilu gatunkowym. Z każdym koncertem model się uczy. Dane historyczne trafiają do modelu LightGBM jako features.
+  > **Dotyczy modułów:**
+  > - `apps/api/src/recommendations/` — features historyczne w modelu ML
+  > - `apps/api/src/analytics/` — zapis i agregacja danych historycznych per utwór/artysta
 
 ---
 
