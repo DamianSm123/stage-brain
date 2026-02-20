@@ -6,7 +6,23 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.30",
+    "alembic>=1.15",
+    "pydantic-settings>=2.7",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.25",
+    "httpx>=0.28",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
 
 # ---------------------------------------------------------------------------
 # Ruff — linter + formatter
@@ -55,6 +71,9 @@ ignore = [
 "alembic/**/*.py" = [
     "F401",    # unused imports in migrations
     "E501",    # line length in auto-generated code
+]
+"scripts/**/*.py" = [
+    "T20",     # print is fine in scripts
 ]
 
 [tool.ruff.lint.isort]
