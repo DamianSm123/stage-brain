@@ -8,6 +8,12 @@ export interface Recommendation {
   expected_engagement_delta: number;
 }
 
+export interface RecoveryAction {
+  type: "skip_segment" | "switch_variant";
+  segment_id: string;
+  variant_type?: string;
+}
+
 export interface RecoveryScenario {
   id: string;
   description: string;
@@ -16,4 +22,5 @@ export interface RecoveryScenario {
   impact: string;
   is_compound: boolean;
   actions: string[];
+  structured_actions: RecoveryAction[];
 }

@@ -7,3 +7,15 @@ export interface Venue {
   capacity: number;
   city: string;
 }
+
+export interface CalibrationPreset {
+  id: string;
+  name: string;
+  venue_type: VenueType;
+  capacity_min: number;
+  capacity_max: number;
+  genre: string;
+  energy_baseline: number;
+  energy_sensitivity: number;
+  crowd_noise_floor: number;
+}

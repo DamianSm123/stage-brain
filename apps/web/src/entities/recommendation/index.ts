@@ -1,1 +1,1 @@
-export type { Recommendation, RecoveryScenario, RiskLevel } from "./model/types";
+export type { Recommendation, RecoveryAction, RecoveryScenario, RiskLevel } from "./model/types";

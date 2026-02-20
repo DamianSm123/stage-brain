@@ -23,6 +23,9 @@ interface ShowState {
   setShowStatus: (status: ShowStatus) => void;
   setSegmentStatus: (segmentId: string, status: SegmentStatus) => void;
   addTag: (tag: OperatorTag) => void;
+  initializeShow: (show: Show, timeline: TimelineEntry[]) => void;
+  applyRecoveryScenario: (scenarioId: string) => void;
+  acceptRecommendation: (segmentId: string) => void;
 }
 
 export const useShowStore = create<ShowState>((set) => ({
@@ -56,6 +59,11 @@ export const useShowStore = create<ShowState>((set) => ({
             updated.actual_duration_seconds = Math.floor(
               (Date.now() - new Date(entry.started_at).getTime()) / 1000,
             );
+            updated.delta_seconds =
+              updated.actual_duration_seconds - entry.planned_duration_seconds;
+          } else {
+            updated.actual_duration_seconds = 0;
+            updated.delta_seconds = -entry.planned_duration_seconds;
           }
         }
 
@@ -67,4 +75,92 @@ export const useShowStore = create<ShowState>((set) => ({
     set((state) => ({
       tags: [...state.tags, tag],
     })),
+
+  initializeShow: (show, timeline) =>
+    set({
+      show,
+      timeline,
+      tags: [],
+    }),
+
+  applyRecoveryScenario: (scenarioId) =>
+    set((state) => {
+      const scenario = state.recoveryScenarios.find((s) => s.id === scenarioId);
+      if (!scenario) return state;
+
+      const segments = state.show.setlist.segments;
+      let updatedTimeline = [...state.timeline];
+
+      for (const action of scenario.structured_actions) {
+        if (action.type === "skip_segment") {
+          updatedTimeline = updatedTimeline.map((entry) => {
+            if (entry.segment_id !== action.segment_id) return entry;
+            if (entry.status !== "planned") return entry;
+            return {
+              ...entry,
+              status: "skipped" as const,
+              ended_at: new Date().toISOString(),
+              actual_duration_seconds: 0,
+              delta_seconds: -entry.planned_duration_seconds,
+            };
+          });
+        }
+
+        if (action.type === "switch_variant" && action.variant_type) {
+          const segment = segments.find((s) => s.id === action.segment_id);
+          const variant = segment?.variants.find((v) => v.variant_type === action.variant_type);
+          if (variant) {
+            updatedTimeline = updatedTimeline.map((entry) => {
+              if (entry.segment_id !== action.segment_id) return entry;
+              return {
+                ...entry,
+                variant_used: action.variant_type,
+                planned_duration_seconds: variant.duration_seconds,
+              };
+            });
+          }
+        }
+      }
+
+      return {
+        timeline: updatedTimeline,
+        recoveryScenarios: state.recoveryScenarios.filter((s) => s.id !== scenarioId),
+      };
+    }),
+
+  acceptRecommendation: (segmentId) =>
+    set((state) => {
+      const now = new Date().toISOString();
+      const nowMs = Date.now();
+
+      const updatedTimeline = state.timeline.map((entry) => {
+        // Complete the currently active segment
+        if (entry.status === "active") {
+          const actualDuration = entry.started_at
+            ? Math.floor((nowMs - new Date(entry.started_at).getTime()) / 1000)
+            : 0;
+          return {
+            ...entry,
+            status: "completed" as const,
+            ended_at: now,
+            actual_duration_seconds: actualDuration,
+            delta_seconds: actualDuration - entry.planned_duration_seconds,
+          };
+        }
+        // Activate the recommended segment
+        if (entry.segment_id === segmentId && entry.status === "planned") {
+          return {
+            ...entry,
+            status: "active" as const,
+            started_at: now,
+          };
+        }
+        return entry;
+      });
+
+      return {
+        timeline: updatedTimeline,
+        recommendations: state.recommendations.filter((r) => r.segment_id !== segmentId),
+      };
+    }),
 }));

@@ -29,6 +29,7 @@ function getRiskLabel(risk: RiskLevel): string {
 export function RecommendationPanel() {
   const recommendations = useShowStore((state) => state.recommendations);
   const show = useShowStore((state) => state.show);
+  const acceptRecommendation = useShowStore((state) => state.acceptRecommendation);
 
   const segments = show.setlist.segments;
 
@@ -83,7 +84,11 @@ export function RecommendationPanel() {
 
         <p className="mb-3 text-sm text-muted-foreground">&ldquo;{topRec.reason}&rdquo;</p>
 
-        <Button className="min-h-[44px] w-full font-semibold" size="lg">
+        <Button
+          className="min-h-[44px] w-full font-semibold"
+          size="lg"
+          onClick={() => acceptRecommendation(topRec.segment_id)}
+        >
           ACCEPT
         </Button>
       </div>

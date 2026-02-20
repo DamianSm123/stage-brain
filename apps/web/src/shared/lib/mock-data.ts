@@ -106,14 +106,19 @@ export const MOCK_SETLIST: Setlist = {
 };
 
 // --- Show ---
+// Dates relative to "now" so the demo always works regardless of current date.
+
+function minutesFromNow(minutes: number): string {
+  return new Date(Date.now() + minutes * 60_000).toISOString();
+}
 
 export const MOCK_SHOW: Show = {
   id: "show-1",
-  name: "Quebonafide — Warszawa 15.05.2026",
+  name: "Quebonafide — Warszawa",
   status: "live",
-  scheduled_start: "2026-05-15T20:00:00",
-  curfew: "2026-05-15T23:00:00",
-  actual_start: "2026-05-15T20:02:00",
+  scheduled_start: minutesAgo(12),
+  curfew: minutesFromNow(150),
+  actual_start: minutesAgo(10),
   venue: MOCK_VENUE,
   setlist: MOCK_SETLIST,
 };
@@ -211,6 +216,7 @@ export const MOCK_RECOVERY_SCENARIOS: RecoveryScenario[] = [
     impact: "usuwa ballad contrast",
     is_compound: false,
     actions: ["Skip segment #4 (Jesień)"],
+    structured_actions: [{ type: "skip_segment", segment_id: "seg-4" }],
   },
   {
     id: "rec-2",
@@ -220,6 +226,7 @@ export const MOCK_RECOVERY_SCENARIOS: RecoveryScenario[] = [
     impact: "minimalny wpływ na energię",
     is_compound: false,
     actions: ["Switch segment #3 to short variant"],
+    structured_actions: [{ type: "switch_variant", segment_id: "seg-3", variant_type: "short" }],
   },
   {
     id: "rec-3",
@@ -229,5 +236,9 @@ export const MOCK_RECOVERY_SCENARIOS: RecoveryScenario[] = [
     impact: "usuwa balladę, skraca transition",
     is_compound: true,
     actions: ["Skip segment #4 (Jesień)", "Switch segment #3 to short variant"],
+    structured_actions: [
+      { type: "skip_segment", segment_id: "seg-4" },
+      { type: "switch_variant", segment_id: "seg-3", variant_type: "short" },
+    ],
   },
 ];

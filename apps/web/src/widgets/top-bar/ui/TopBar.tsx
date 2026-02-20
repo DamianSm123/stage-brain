@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { ROUTES } from "@/shared/config/navigation";
-import { CurfewCountdown } from "./CurfewCountdown";
 import { ShowClock } from "./ShowClock";
 import { SystemStatus } from "./SystemStatus";
-import { TimeDelta } from "./TimeDelta";
 
 export function TopBar() {
   const [now, setNow] = useState(() => new Date());
@@ -15,8 +13,8 @@ export function TopBar() {
   }, []);
 
   return (
-    <div className="flex h-16 items-center justify-between border-b border-border bg-card px-4">
-      {/* Left: Logo (link to setup) + System Status */}
+    <div className="flex h-12 items-center justify-between border-b border-border bg-card px-4">
+      {/* Left: Logo + System Status */}
       <div className="flex items-center gap-3">
         <Link
           to={ROUTES.SETUP}
@@ -27,14 +25,8 @@ export function TopBar() {
         <SystemStatus />
       </div>
 
-      {/* Center-left: Show Clock */}
+      {/* Right: Show Clock */}
       <ShowClock now={now} />
-
-      {/* Center: Curfew Countdown (BIGGEST element) */}
-      <CurfewCountdown now={now} />
-
-      {/* Right: Time Delta */}
-      <TimeDelta />
     </div>
   );
 }

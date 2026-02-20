@@ -35,10 +35,15 @@ function formatTimeSaved(totalSeconds: number): string {
 export function RecoveryScenarios() {
   const timeline = useShowStore((state) => state.timeline);
   const recoveryScenarios = useShowStore((state) => state.recoveryScenarios);
+  const applyRecoveryScenario = useShowStore((state) => state.applyRecoveryScenario);
 
-  // Sum of delta_seconds from completed segments — positive means behind schedule
+  // Sum of delta_seconds from completed/skipped segments — positive means behind schedule
   const totalDelta = timeline.reduce((sum, entry) => {
-    if (entry.delta_seconds != null && entry.delta_seconds > 0) {
+    if (
+      (entry.status === "completed" || entry.status === "skipped") &&
+      entry.delta_seconds != null &&
+      entry.delta_seconds > 0
+    ) {
       return sum + entry.delta_seconds;
     }
     return sum;
@@ -97,6 +102,7 @@ export function RecoveryScenarios() {
                 variant="outline"
                 size="sm"
                 className="min-h-[44px] min-w-[100px] font-semibold"
+                onClick={() => applyRecoveryScenario(scenario.id)}
               >
                 ZASTOSUJ
               </Button>

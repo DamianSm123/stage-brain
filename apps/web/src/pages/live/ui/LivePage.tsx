@@ -1,3 +1,4 @@
+import { CurfewPanel } from "@/widgets/curfew-panel";
 import { EngagementGauge } from "@/widgets/engagement-gauge";
 import { NowPlaying } from "@/widgets/now-playing";
 import { QuickTags } from "@/widgets/quick-tags";
@@ -19,8 +20,9 @@ export function LivePage() {
           <SegmentTimeline />
         </div>
 
-        {/* Column 2: Now Playing + Engagement + Quick Tags */}
+        {/* Column 2: Curfew + Now Playing + Engagement + Quick Tags */}
         <div className="flex flex-col gap-3 overflow-y-auto p-4">
+          <CurfewPanel />
           <NowPlaying />
           <EngagementGauge />
           <QuickTags />

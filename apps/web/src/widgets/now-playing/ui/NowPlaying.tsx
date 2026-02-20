@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useShowStore } from "@/entities/show";
+import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Progress } from "@/shared/ui/progress";
 
@@ -46,6 +47,8 @@ export function NowPlaying() {
   const elapsedSeconds = Math.max(0, Math.floor((now - startedAt) / 1000));
   const totalSeconds = activeEntry.planned_duration_seconds;
   const progressPercent = Math.min(100, (elapsedSeconds / totalSeconds) * 100);
+  const isOvertime = elapsedSeconds > totalSeconds;
+  const overtimeSeconds = isOvertime ? elapsedSeconds - totalSeconds : 0;
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -62,12 +65,26 @@ export function NowPlaying() {
         )}
       </div>
 
-      <Progress value={progressPercent} className="mb-1 h-3" />
+      <Progress
+        value={progressPercent}
+        className={cn("mb-1 h-3", isOvertime && "[&_[data-slot=progress-indicator]]:bg-red-500")}
+      />
 
-      <div className="mb-4 flex justify-between text-sm tabular-nums text-muted-foreground">
+      <div
+        className={cn(
+          "flex justify-between text-sm tabular-nums text-muted-foreground",
+          isOvertime ? "mb-1 text-red-500" : "mb-4",
+        )}
+      >
         <span>{formatTime(elapsedSeconds)}</span>
         <span>/ {formatTime(totalSeconds)}</span>
       </div>
+
+      {isOvertime && (
+        <div className="mb-3 text-center text-lg font-bold text-red-500 animate-pulse">
+          OVERTIME +{formatTime(overtimeSeconds)}
+        </div>
+      )}
 
       {nextSegment && nextEntry && (
         <div className="text-sm text-muted-foreground">
