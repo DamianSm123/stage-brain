@@ -122,6 +122,40 @@ StageBrain to **system wsparcia decyzyjnego w czasie rzeczywistym** dla showcall
 - (-) GIL — mitygacja: asyncio dla I/O, ProcessPoolExecutor dla CPU-intensive audio
 - (-) Deweloper nie zna Pythona — mitygacja: AI pisze cały backend, Python naturalnie się przyswaja przez code review
 
+**Architektura backend: Modular/Domain-Based**
+
+Wzorzec organizacji kodu backendowego: **flat domain modules** (inspiracja: zhanymkanov/fastapi-best-practices, Netflix Dispatch).
+
+Każdy moduł domenowy zawiera stały zestaw plików:
+
+| Plik | Rola |
+|------|------|
+| `router.py` | Thin HTTP endpoints (FastAPI `APIRouter`) |
+| `service.py` | Logika biznesowa (plain async functions) |
+| `schemas.py` | Pydantic v2 request/response (XxxCreate, XxxResponse, XxxUpdate) |
+| `dependencies.py` | Annotated FastAPI deps, reusable per moduł |
+| `exceptions.py` | Domain exceptions (router konwertuje na HTTP) |
+| `ws.py` | WebSocket handler (tylko moduły z real-time: `audio/`, `shows/`) |
+
+Pliki dodatkowe per domena (tylko gdzie potrzebne):
+- `pipeline.py`, `classifier.py` — audio processing (w `audio/`)
+- `ml_model.py`, `fallback.py` — ML inference (w `recommendations/`)
+- `scoring.py` — engagement score formula (w `engagement/`)
+- `calibration.py` — logika kalibracji (w `venues/`)
+- `reports.py` — generowanie raportów (w `analytics/`)
+
+**Kluczowe decyzje strukturalne:**
+
+- **Modele ORM centralizowane w `models/`** — nie per-moduł. Modele mają gęste cross-domain relacje (Show → Setlist → Segment → SegmentVariant, Show → Venue → CalibrationPreset). Rozdzielenie per moduł tworzy circular imports. Centralizacja upraszcza Alembic autogen i daje pełny widok schematu w jednym miejscu.
+- **WebSocket handlery co-located z domeną** — `audio/ws.py` (binary audio ingest), `shows/ws.py` (live panel JSON broadcast). Bez osobnego top-level `websocket/` modułu — AI i developer mają cały kod domeny w jednym folderze.
+- **ML code w dedykowanych plikach** — `service.py` orchestruje, dedykowane pliki (`pipeline.py`, `ml_model.py`) zawierają inference. Jasne rozdzielenie logiki biznesowej od ML.
+
+**Dlaczego flat modular (a nie Clean Architecture / DDD / Vertical Slice):**
+- Backend serwuje JSON, nie renderuje zagnieżdżonych komponentów — cross-domain to proste importy między service'ami, nie wymaga warstw kompozycji.
+- Clean Architecture / DDD dodają 2-4x więcej plików (porty, adaptery, agregaty, repozytoria) bez proporcjonalnej korzyści przy umiarkowanej złożoności domeny StageBrain.
+- FastAPI jest zaprojektowane pod ten wzorzec — `APIRouter` per moduł, `Depends()` jako DI, Pydantic per moduł.
+- AI pisze cały backend — flat structure z identycznym zestawem plików per moduł = zero ambiguity, zero indirection.
+
 **Kluczowe biblioteki:**
 
 | Biblioteka | Rola |
@@ -175,8 +209,33 @@ StageBrain to **system wsparcia decyzyjnego w czasie rzeczywistym** dla showcall
 - Oparty na Radix UI — dostępność (a11y) i duże touch targets out of the box
 - Tailwind-native — spójna integracja ze stylem projektu, zero konfliktu CSS
 - Ciemny motyw jako default — kluczowe dla backstage (ciemne otoczenie)
-- Nie jest biblioteką npm — komponenty kopiowane do `src/components/ui/`, pełna kontrola nad customizacją
+- Nie jest biblioteką npm — komponenty kopiowane do `src/shared/ui/` (warstwa shared w FSD), pełna kontrola nad customizacją
 - Podejście code-first do UI: shadcn daje profesjonalny design system od razu, iterujemy wizualnie bez Figmy
+
+**Architektura frontend: Feature-Sliced Design (FSD)**
+
+Wzorzec organizacji kodu frontendowego: **FSD v2** (https://feature-sliced.design).
+
+Warstwy (od najwyższej do najniższej):
+
+| Warstwa | Rola w StageBrain |
+|---------|-------------------|
+| `app/` | Router, providers, global error boundaries |
+| `pages/` | Kompozycje per route — SetupPage, LivePage, PostShowPage, AudioSourcePage |
+| `widgets/` | Samodzielne bloki UI — EngagementGauge, CurfewClock, RecommendationPanel, SetlistEditor itp. |
+| `features/` | Akcje użytkownika — StartShow, ControlSegment, AcceptRecommendation, AddTag, ImportSetlist itp. |
+| `entities/` | Modele domenowe + bazowe UI — Show, Segment, Venue, EngagementMetric, Recommendation |
+| `shared/` | shadcn/ui, openapi-fetch client, WebSocket manager, utils, typy globalne |
+
+**Reguły importów (strict):** warstwa importuje tylko z warstw poniżej. Slices na tej samej warstwie nie importują z siebie nawzajem. Każdy slice eksponuje public API przez `index.ts`.
+
+**Dlaczego FSD (a nie Bulletproof React / flat features):**
+- **Entity sharing** — Segment, Show, Venue są używane w 3+ stronach. Warstwa `entities/` rozwiązuje to by design, bez ad-hoc przenoszenia do shared.
+- **Kompozycja live panelu** — 6+ niezależnych bloków UI (gauge, clock, recommendations, timeline, tags, segment control) to naturalne widgety. Bez warstwy `widgets/` feature live-panel staje się god-folderem.
+- **Nawigacja AI w kodzie** — strict rules = zero ambiguity. AI (współautor backendu i części frontendu) zawsze wie gdzie szukać i tworzyć pliki.
+- **shadcn/ui** — komponenty w `shared/ui/`, zero konfliktu z architekturą.
+
+**Segmenty wewnątrz slice'ów:** `ui/`, `model/`, `api/`, `lib/`, `config/` — grupowanie po przeznaczeniu, nie po typie pliku.
 
 **Bridge backend ↔ frontend:**
 FastAPI natywnie generuje OpenAPI spec → `openapi-typescript` generuje typy TS → frontend ma type safety bez ręcznego utrzymywania DTO. Zmiana modelu w Pydantic → automatyczna aktualizacja typów w React.
@@ -475,33 +534,108 @@ Test audio (baseline)            ├─ Timeline segmentów           ├─ Tab
 ```
 stage-brain/
 ├── apps/
-│   ├── api/                      # FastAPI backend
+│   ├── api/                      # FastAPI backend (Modular/Domain-Based)
 │   │   ├── src/
-│   │   │   ├── audio/            # Audio ingest, feature extraction, YAMNet
+│   │   │   ├── core/             # Infrastruktura (NIE logika biznesowa)
+│   │   │   │   ├── database.py   # Engine, session factory, get_session()
+│   │   │   │   ├── settings.py   # Pydantic Settings
+│   │   │   │   ├── exceptions.py # Base exception classes
+│   │   │   │   └── middleware.py # CORS, error handlers
+│   │   │   ├── models/           # SQLAlchemy ORM (centralizowane — gęste cross-domain FK)
+│   │   │   │   ├── base.py       # DeclarativeBase, TimestampMixin
+│   │   │   │   ├── show.py
+│   │   │   │   ├── venue.py      # Venue + CalibrationPreset
+│   │   │   │   ├── setlist.py    # Setlist, Segment, SegmentVariant
+│   │   │   │   ├── timeline.py
+│   │   │   │   ├── engagement.py
+│   │   │   │   ├── recommendation.py
+│   │   │   │   ├── tag.py
+│   │   │   │   └── report.py
+│   │   │   ├── shows/            # Koncerty, timeline, kontrola czasu
+│   │   │   │   ├── router.py     # REST: CRUD show, start/end/pause
+│   │   │   │   ├── service.py    # Logika: stany show, timeline tracking
+│   │   │   │   ├── schemas.py    # ShowCreate, ShowResponse, ShowUpdate...
+│   │   │   │   ├── dependencies.py
+│   │   │   │   ├── exceptions.py
+│   │   │   │   └── ws.py         # WebSocket: live panel JSON broadcast
+│   │   │   ├── setlists/         # Zarządzanie setlistą, import, warianty
+│   │   │   │   ├── router.py
+│   │   │   │   ├── service.py
+│   │   │   │   ├── schemas.py
+│   │   │   │   └── exceptions.py
+│   │   │   ├── audio/            # Audio ingest + feature extraction
+│   │   │   │   ├── router.py     # REST: audio status, test endpoints
+│   │   │   │   ├── service.py    # Orchestracja pipeline
+│   │   │   │   ├── schemas.py
+│   │   │   │   ├── pipeline.py   # librosa: RMS, spectral, ZCR
+│   │   │   │   ├── classifier.py # YAMNet: event classification
+│   │   │   │   └── ws.py         # WebSocket: binary audio ingest
 │   │   │   ├── engagement/       # Engagement scoring, kalibracja, trend
+│   │   │   │   ├── router.py
+│   │   │   │   ├── service.py
+│   │   │   │   ├── schemas.py
+│   │   │   │   └── scoring.py    # Engagement score formula + calibration
 │   │   │   ├── recommendations/  # ML ranking (LightGBM), rekomendacje
-│   │   │   ├── setlist/          # Zarządzanie setlistą, import, warianty
-│   │   │   ├── shows/            # Koncerty, timeline, kontrola czasu, tagi
+│   │   │   │   ├── router.py
+│   │   │   │   ├── service.py
+│   │   │   │   ├── schemas.py
+│   │   │   │   ├── ml_model.py   # LightGBM inference
+│   │   │   │   └── fallback.py   # Rule-based fallback ranking
+│   │   │   ├── venues/           # Obiekty koncertowe, kalibracja
+│   │   │   │   ├── router.py
+│   │   │   │   ├── service.py
+│   │   │   │   ├── schemas.py
+│   │   │   │   └── calibration.py # Calibration logic, preset management
 │   │   │   ├── analytics/        # Post-show, raporty, eksport
-│   │   │   ├── websocket/        # WebSocket handlers (audio ingest + live panel)
-│   │   │   └── core/             # Konfiguracja, DB, auth, utils, models base
-│   │   ├── models/               # Wytrenowane modele ML (YAMNet, LightGBM)
-│   │   ├── migrations/           # Alembic migrations
-│   │   ├── tests/
+│   │   │   │   ├── router.py
+│   │   │   │   ├── service.py
+│   │   │   │   ├── schemas.py
+│   │   │   │   └── reports.py    # PDF generation (weasyprint)
+│   │   │   └── tags/             # Manualne tagi operatora
+│   │   │       ├── router.py
+│   │   │       ├── service.py
+│   │   │       └── schemas.py
+│   │   ├── ml_models/            # Wytrenowane modele ML (YAMNet, LightGBM weights)
+│   │   ├── alembic/              # Alembic migrations
+│   │   ├── tests/                # Mirrors src/ structure
 │   │   └── pyproject.toml
 │   │
-│   └── web/                      # React frontend
+│   └── web/                      # React frontend (FSD v2)
 │       ├── src/
-│       │   ├── features/
-│       │   │   ├── live-panel/   # Panel operatora (real-time, engagement, rekomendacje)
-│       │   │   ├── audio-source/ # Strona przechwytywania audio (Web Audio API)
-│       │   │   ├── setlist/      # Zarządzanie setlistą, import
+│       │   ├── app/              # Router, providers, global error boundaries
+│       │   ├── pages/            # Kompozycje per route
+│       │   │   ├── setup/        # Konfiguracja koncertu, venue, kalibracja
+│       │   │   ├── live/         # Panel operatora (real-time)
 │       │   │   ├── post-show/    # Analityka post-show, raporty
-│       │   │   └── setup/        # Konfiguracja koncertu, venue, kalibracja
-│       │   ├── components/       # Współdzielone komponenty UI
-│       │   ├── hooks/            # Custom hooks (useWebSocket, useEngagement...)
-│       │   ├── stores/           # Zustand stores
-│       │   └── lib/              # API client (generated), utils
+│       │   │   └── audio-source/ # Strona przechwytywania audio
+│       │   ├── widgets/          # Samodzielne bloki UI
+│       │   │   ├── engagement-gauge/    # Wskaźnik energii
+│       │   │   ├── segment-timeline/    # Timeline setlisty
+│       │   │   ├── curfew-clock/        # Zegar + prognoza curfew
+│       │   │   ├── recommendation-panel/# Rekomendacje ML
+│       │   │   ├── operator-tags/       # Quick-tag panel
+│       │   │   └── setlist-editor/      # Drag & drop + import
+│       │   ├── features/         # Akcje użytkownika
+│       │   │   ├── start-show/          # Rozpocznij koncert
+│       │   │   ├── control-segment/     # Start / end / skip segment
+│       │   │   ├── accept-recommendation/
+│       │   │   ├── add-tag/
+│       │   │   ├── import-setlist/
+│       │   │   ├── calibrate-venue/
+│       │   │   └── export-report/
+│       │   ├── entities/         # Modele domenowe + bazowe UI
+│       │   │   ├── show/         # Show model + ShowCard
+│       │   │   ├── segment/      # Segment model + SegmentRow
+│       │   │   ├── venue/        # Venue model
+│       │   │   ├── engagement-metric/
+│       │   │   ├── recommendation/
+│       │   │   └── operator-tag/
+│       │   └── shared/           # shadcn/ui, API client, WebSocket, utils
+│       │       ├── ui/           # shadcn/ui components
+│       │       ├── api/          # openapi-fetch client, WebSocket manager
+│       │       ├── lib/          # cn(), formattery, utils
+│       │       ├── model/        # Globalne typy, Zustand helpers
+│       │       └── config/       # Stałe, env
 │       ├── package.json
 │       └── tsconfig.json
 │

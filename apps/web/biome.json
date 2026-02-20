@@ -56,7 +56,7 @@
   },
   "overrides": [
     {
-      "includes": ["src/components/ui/**", "src/lib/utils.ts"],
+      "includes": ["src/shared/ui/**", "src/shared/lib/utils.ts"],
       "formatter": {
         "enabled": false
       },
