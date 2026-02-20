@@ -27,6 +27,12 @@ apps/web/dist/
 *.swo
 .DS_Store
 
+# Claude Code
+.claude/settings.local.json
+
+# TypeScript build info
+*.tsbuildinfo
+
 # Docker
 docker-compose.override.yml
 
