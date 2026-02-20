@@ -119,14 +119,19 @@ export const MOCK_SHOW: Show = {
 };
 
 // --- Timeline (show in progress: 2 completed, 1 active, 2 planned) ---
+// Timestamps relative to "now" so progress bar works in dev/demo.
+
+function minutesAgo(minutes: number): string {
+  return new Date(Date.now() - minutes * 60_000).toISOString();
+}
 
 export const MOCK_TIMELINE: TimelineEntry[] = [
   {
     segment_id: "seg-1",
     status: "completed",
     variant_used: "full",
-    started_at: "2026-05-15T20:02:00",
-    ended_at: "2026-05-15T20:05:42",
+    started_at: minutesAgo(10),
+    ended_at: minutesAgo(6.3),
     planned_duration_seconds: 210,
     actual_duration_seconds: 222,
     delta_seconds: 12,
@@ -135,8 +140,8 @@ export const MOCK_TIMELINE: TimelineEntry[] = [
     segment_id: "seg-2",
     status: "completed",
     variant_used: "full",
-    started_at: "2026-05-15T20:06:00",
-    ended_at: "2026-05-15T20:09:20",
+    started_at: minutesAgo(6),
+    ended_at: minutesAgo(2.7),
     planned_duration_seconds: 200,
     actual_duration_seconds: 200,
     delta_seconds: 0,
@@ -145,7 +150,7 @@ export const MOCK_TIMELINE: TimelineEntry[] = [
     segment_id: "seg-3",
     status: "active",
     variant_used: "full",
-    started_at: "2026-05-15T20:09:40",
+    started_at: minutesAgo(1),
     planned_duration_seconds: 180,
   },
   {

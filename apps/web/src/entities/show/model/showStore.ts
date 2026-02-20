@@ -40,9 +40,27 @@ export const useShowStore = create<ShowState>((set) => ({
 
   setSegmentStatus: (segmentId, status) =>
     set((state) => ({
-      timeline: state.timeline.map((entry) =>
-        entry.segment_id === segmentId ? { ...entry, status } : entry,
-      ),
+      timeline: state.timeline.map((entry) => {
+        if (entry.segment_id !== segmentId) return entry;
+
+        const now = new Date().toISOString();
+        const updated: TimelineEntry = { ...entry, status };
+
+        if (status === "active") {
+          updated.started_at = now;
+        }
+
+        if (status === "completed" || status === "skipped") {
+          updated.ended_at = now;
+          if (entry.started_at) {
+            updated.actual_duration_seconds = Math.floor(
+              (Date.now() - new Date(entry.started_at).getTime()) / 1000,
+            );
+          }
+        }
+
+        return updated;
+      }),
     })),
 
   addTag: (tag) =>

@@ -8,14 +8,14 @@ import { TopBar } from "@/widgets/top-bar";
 
 export function LivePage() {
   return (
-    <div className="flex h-full flex-col -m-6">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       {/* Top Bar — always visible: status, clock, curfew, delta */}
       <TopBar />
 
       {/* 3-column Command Center layout */}
-      <div className="grid flex-1 grid-cols-[200px_1fr_280px] overflow-hidden">
+      <div className="grid flex-1 grid-cols-[260px_1fr_280px] overflow-hidden">
         {/* Column 1: Segments Timeline */}
-        <div className="overflow-y-auto border-r border-border p-3">
+        <div className="flex flex-col overflow-hidden border-r border-border p-3">
           <SegmentTimeline />
         </div>
 

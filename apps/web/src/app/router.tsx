@@ -12,9 +12,9 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to={ROUTES.SETUP} replace /> },
       { path: ROUTES.SETUP, element: <SetupPage /> },
-      { path: ROUTES.LIVE, element: <LivePage /> },
       { path: ROUTES.AUDIO_SOURCE, element: <AudioSourcePage /> },
       { path: ROUTES.POST_SHOW, element: <PostShowPage /> },
     ],
   },
+  { path: ROUTES.LIVE, element: <LivePage /> },
 ]);
