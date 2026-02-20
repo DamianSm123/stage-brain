@@ -13,6 +13,7 @@ npm-debug.log*
 
 # Build
 apps/web/dist/
+.vite/
 
 # Environment
 .env
