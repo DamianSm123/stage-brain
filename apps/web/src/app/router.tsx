@@ -1,18 +1,22 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter } from "react-router";
 import { PageLayout } from "@/app/layouts/PageLayout";
-import { AudioSourcePage } from "@/pages/audio-source";
+import { DashboardPage } from "@/pages/dashboard";
 import { LivePage } from "@/pages/live";
 import { PostShowPage } from "@/pages/post-show";
-import { SetupPage } from "@/pages/setup";
+import { SetlistTemplatesPage, TemplateEditorPage } from "@/pages/setlist-templates";
+import { ShowEditorPage } from "@/pages/show-editor";
+import { StatisticsPage } from "@/pages/statistics";
 import { ROUTES } from "@/shared/config/navigation";
 
 export const router = createBrowserRouter([
   {
     element: <PageLayout />,
     children: [
-      { index: true, element: <Navigate to={ROUTES.SETUP} replace /> },
-      { path: ROUTES.SETUP, element: <SetupPage /> },
-      { path: ROUTES.AUDIO_SOURCE, element: <AudioSourcePage /> },
+      { index: true, element: <DashboardPage /> },
+      { path: ROUTES.SHOW_EDITOR, element: <ShowEditorPage /> },
+      { path: ROUTES.SETLIST_TEMPLATES, element: <SetlistTemplatesPage /> },
+      { path: ROUTES.TEMPLATE_EDITOR, element: <TemplateEditorPage /> },
+      { path: ROUTES.STATISTICS, element: <StatisticsPage /> },
       { path: ROUTES.POST_SHOW, element: <PostShowPage /> },
     ],
   },

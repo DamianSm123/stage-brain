@@ -31,6 +31,7 @@ export interface Setlist {
 }
 
 export interface TimelineEntry {
+  id: string;
   segment_id: string;
   status: SegmentStatus;
   variant_used?: string;
@@ -39,4 +40,5 @@ export interface TimelineEntry {
   planned_duration_seconds: number;
   actual_duration_seconds?: number;
   delta_seconds?: number;
+  is_replay?: boolean;
 }

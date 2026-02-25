@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import type { OperatorTag } from "@/entities/operator-tag";
 import { useShowStore } from "@/entities/show";
+import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import {
@@ -11,14 +12,15 @@ import {
   DialogTitle,
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/ui/tooltip";
 
 const PRESET_TAGS = [
-  { tag: "Peak", icon: "⚡" },
-  { tag: "Low energy", icon: "↓" },
-  { tag: "Tech issue", icon: "⚠" },
-  { tag: "Improv", icon: "🎤" },
-  { tag: "Great!", icon: "★" },
-  { tag: "Przebudowa", icon: "🔧" },
+  { tag: "Peak", icon: "\u26A1", label: "Szczyt energii" },
+  { tag: "Low energy", icon: "\u2193", label: "Niska energia" },
+  { tag: "Tech issue", icon: "\u26A0", label: "Problem techniczny" },
+  { tag: "Improv", icon: "\uD83C\uDFA4", label: "Improwizacja" },
+  { tag: "Great!", icon: "\u2605", label: "\u015Awietny moment" },
+  { tag: "Przebudowa", icon: "\uD83D\uDD27", label: "Przebudowa sceny" },
 ] as const;
 
 const FLASH_DURATION_MS = 500;
@@ -67,42 +69,48 @@ export function QuickTags() {
   }, [customText, addTag]);
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-        Quick Tags
-      </h3>
+    <div className="space-y-2">
+      <TooltipProvider>
+        <div className="flex items-center gap-1.5">
+          {PRESET_TAGS.map(({ tag, icon, label }) => (
+            <Tooltip key={tag}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className={cn(
+                    "min-h-[44px] min-w-[44px] text-lg transition-colors",
+                    flashingTag === tag && "bg-primary text-primary-foreground",
+                  )}
+                  onClick={() => handleTagClick(tag, icon)}
+                >
+                  {icon}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{label}</TooltipContent>
+            </Tooltip>
+          ))}
 
-      <div className="grid grid-cols-3 gap-2">
-        {PRESET_TAGS.map(({ tag, icon }) => (
           <Button
-            key={tag}
             variant="outline"
-            className={`min-h-[44px] text-sm transition-colors ${
-              flashingTag === tag ? "bg-primary text-primary-foreground" : ""
-            }`}
-            onClick={() => handleTagClick(tag, icon)}
+            className={cn(
+              "min-h-[44px] px-3 text-sm transition-colors",
+              flashingTag === "custom" && "bg-primary text-primary-foreground",
+            )}
+            onClick={() => setDialogOpen(true)}
           >
-            <span>{icon}</span>
-            <span>{tag}</span>
+            + Tag
           </Button>
-        ))}
-      </div>
+        </div>
+      </TooltipProvider>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <Button
-          variant="outline"
-          className={`min-h-[44px] w-full text-sm transition-colors ${
-            flashingTag === "custom" ? "bg-primary text-primary-foreground" : ""
-          }`}
-          onClick={() => setDialogOpen(true)}
-        >
-          + Tag
-        </Button>
-
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Custom tag</DialogTitle>
-            <DialogDescription>Wpisz tag (max {CUSTOM_TAG_MAX_LENGTH} znaków)</DialogDescription>
+            <DialogTitle>W\u0142asny tag</DialogTitle>
+            <DialogDescription>
+              Wpisz tag (max {CUSTOM_TAG_MAX_LENGTH} znak\u00F3w)
+            </DialogDescription>
           </DialogHeader>
 
           <form
@@ -115,7 +123,7 @@ export function QuickTags() {
             <Input
               value={customText}
               onChange={(e) => setCustomText(e.target.value.slice(0, CUSTOM_TAG_MAX_LENGTH))}
-              placeholder="np. Świetna reakcja"
+              placeholder="np. \u015Awietna reakcja"
               maxLength={CUSTOM_TAG_MAX_LENGTH}
               autoFocus
               className="min-h-[44px]"
@@ -128,19 +136,19 @@ export function QuickTags() {
       </Dialog>
 
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 pt-1">
+        <div className="flex flex-wrap gap-1.5">
           {tags
             .slice()
             .reverse()
-            .slice(0, 5)
+            .slice(0, 3)
             .map((t) => (
               <Badge key={t.id} variant="secondary" className="text-xs">
-                {t.custom_text ? `${t.custom_text}` : t.tag}
+                {t.custom_text ? t.custom_text : t.tag}
               </Badge>
             ))}
-          {tags.length > 5 && (
+          {tags.length > 3 && (
             <Badge variant="outline" className="text-xs">
-              +{tags.length - 5}
+              +{tags.length - 3}
             </Badge>
           )}
         </div>

@@ -1,4 +1,4 @@
-export type VenueType = "hall" | "stadium" | "club" | "open_air";
+export type VenueType = "hall" | "stadium" | "club" | "open_air" | "theatre";
 
 export interface Venue {
   id: string;

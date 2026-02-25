@@ -1,8 +1,11 @@
 export const ROUTES = {
-  SETUP: "/setup",
+  DASHBOARD: "/",
+  SHOW_EDITOR: "/shows/:id",
+  SETLIST_TEMPLATES: "/setlist-templates",
+  TEMPLATE_EDITOR: "/setlist-templates/:id",
+  STATISTICS: "/statistics",
+  POST_SHOW: "/post-show/:id",
   LIVE: "/live",
-  AUDIO_SOURCE: "/audio-source",
-  POST_SHOW: "/post-show",
 } as const;
 
 export interface NavItem {
@@ -11,8 +14,8 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Setup", path: ROUTES.SETUP },
+  { label: "Koncerty", path: ROUTES.DASHBOARD },
   { label: "Live", path: ROUTES.LIVE },
-  { label: "Audio Source", path: ROUTES.AUDIO_SOURCE },
-  { label: "Post-show", path: ROUTES.POST_SHOW },
+  { label: "Szablony setlist", path: ROUTES.SETLIST_TEMPLATES },
+  { label: "Statystyki", path: ROUTES.STATISTICS },
 ];

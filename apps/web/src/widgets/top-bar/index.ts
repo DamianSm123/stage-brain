@@ -1,1 +1,1 @@
-export { TopBar } from "./ui/TopBar";
+export { LiveTopBar } from "./ui/LiveTopBar";

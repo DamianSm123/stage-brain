@@ -1,4 +1,33 @@
-export type { CalibrationValues, SetupState } from "./model/setupStore";
-export { useSetupStore } from "./model/setupStore";
+export type { DetailsValidationErrors, ShowEditorState } from "./model/showEditorStore";
+export {
+  getDetailsValidationErrors,
+  isDetailsStepValid,
+  useShowEditorStore,
+} from "./model/showEditorStore";
+export type { ShowUrgency } from "./model/showSelectors";
+export {
+  findConflictingShow,
+  getShowUrgency,
+  selectActiveSegment,
+  selectBufferToCurfew,
+  selectCompletedCount,
+  selectIsInDecisionWindow,
+  selectNextPlannedSegment,
+  selectProjectedEnd,
+  selectShowTimeState,
+  selectTotalDelta,
+} from "./model/showSelectors";
 export { useShowStore } from "./model/showStore";
-export type { Show, ShowStatus } from "./model/types";
+export type { SortOption } from "./model/showsStore";
+export { useShowsStore } from "./model/showsStore";
+export type {
+  ActivityLogEntry,
+  DashboardShow,
+  DashboardShowStatus,
+  EditorSegment,
+  SaveStatus,
+  Show,
+  ShowEditorData,
+  ShowStatus,
+  ShowTimeState,
+} from "./model/types";

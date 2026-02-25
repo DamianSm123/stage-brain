@@ -1,7 +1,7 @@
-import type { EngagementMetric } from "@/entities/engagement-metric";
+import type { EngagementMetric, TimestampedScore } from "@/entities/engagement-metric";
 import type { Recommendation, RecoveryScenario } from "@/entities/recommendation";
 import type { Segment, Setlist, TimelineEntry } from "@/entities/segment";
-import type { Show } from "@/entities/show";
+import type { ActivityLogEntry, Show } from "@/entities/show";
 import type { Venue } from "@/entities/venue";
 
 // --- Venue ---
@@ -116,9 +116,10 @@ export const MOCK_SHOW: Show = {
   id: "show-1",
   name: "Quebonafide — Warszawa",
   status: "live",
-  scheduled_start: minutesAgo(12),
-  curfew: minutesFromNow(150),
-  actual_start: minutesAgo(10),
+  scheduled_start: minutesAgo(62),
+  scheduled_end: minutesFromNow(60),
+  curfew: minutesFromNow(90),
+  actual_start: minutesAgo(60),
   venue: MOCK_VENUE,
   setlist: MOCK_SETLIST,
 };
@@ -132,6 +133,7 @@ function minutesAgo(minutes: number): string {
 
 export const MOCK_TIMELINE: TimelineEntry[] = [
   {
+    id: "entry-1",
     segment_id: "seg-1",
     status: "completed",
     variant_used: "full",
@@ -142,6 +144,7 @@ export const MOCK_TIMELINE: TimelineEntry[] = [
     delta_seconds: 12,
   },
   {
+    id: "entry-2",
     segment_id: "seg-2",
     status: "completed",
     variant_used: "full",
@@ -152,6 +155,7 @@ export const MOCK_TIMELINE: TimelineEntry[] = [
     delta_seconds: 0,
   },
   {
+    id: "entry-3",
     segment_id: "seg-3",
     status: "active",
     variant_used: "full",
@@ -159,11 +163,13 @@ export const MOCK_TIMELINE: TimelineEntry[] = [
     planned_duration_seconds: 180,
   },
   {
+    id: "entry-4",
     segment_id: "seg-4",
     status: "planned",
     planned_duration_seconds: 240,
   },
   {
+    id: "entry-5",
     segment_id: "seg-5",
     status: "planned",
     planned_duration_seconds: 195,
@@ -242,3 +248,73 @@ export const MOCK_RECOVERY_SCENARIOS: RecoveryScenario[] = [
     ],
   },
 ];
+
+// --- Activity Log (initial entries for demo) ---
+
+export const MOCK_ACTIVITY_LOG: ActivityLogEntry[] = [
+  {
+    id: "log-1",
+    timestamp: minutesAgo(1),
+    icon: "\u25B6",
+    message: "Bubbletea start",
+    reversible: false,
+  },
+  {
+    id: "log-2",
+    timestamp: minutesAgo(2.7),
+    icon: "\u25A0",
+    message: "Candy zako\u0144czony",
+    reversible: false,
+  },
+  {
+    id: "log-3",
+    timestamp: minutesAgo(6),
+    icon: "\u25B6",
+    message: "Candy start",
+    reversible: false,
+  },
+  {
+    id: "log-4",
+    timestamp: minutesAgo(6.3),
+    icon: "\u25A0",
+    message: "Tatua\u017C zako\u0144czony",
+    reversible: false,
+  },
+  {
+    id: "log-5",
+    timestamp: minutesAgo(10),
+    icon: "\u25B6",
+    message: "Tatua\u017C start",
+    reversible: false,
+  },
+  {
+    id: "log-6",
+    timestamp: minutesAgo(10),
+    icon: "\u25B6",
+    message: "Koncert rozpocz\u0119ty",
+    reversible: false,
+  },
+];
+
+// --- Engagement History (~60 points, 1 per minute, covering ~60 min from show start) ---
+// Realistic energy curve: warm-up → first songs build → ballad dip → peak
+
+const ENGAGEMENT_SCORES = [
+  // 0-10 min: warm-up / DJ set, energy building slowly
+  25, 28, 30, 33, 35, 38, 40, 42, 44, 45,
+  // 10-20 min: crowd warming up, anticipation
+  47, 48, 50, 52, 50, 53, 55, 54, 56, 58,
+  // 20-30 min: first songs kick in, energy rising
+  55, 58, 62, 60, 65, 68, 64, 67, 70, 66,
+  // 30-40 min: high energy set, some fluctuation
+  68, 72, 70, 74, 71, 75, 73, 70, 68, 65,
+  // 40-50 min: ballad section dip, then recovery
+  60, 55, 52, 50, 48, 52, 55, 58, 62, 65,
+  // 50-60 min: building back up to current peak
+  68, 70, 72, 70, 73, 75, 72, 74, 76, 78,
+];
+
+export const MOCK_ENGAGEMENT_HISTORY: TimestampedScore[] = ENGAGEMENT_SCORES.map((score, i) => ({
+  timestamp: minutesAgo(ENGAGEMENT_SCORES.length - i),
+  score,
+}));
