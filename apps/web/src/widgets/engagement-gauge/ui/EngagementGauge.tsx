@@ -321,6 +321,10 @@ export function EngagementGauge() {
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Energia
+          <span className="font-normal opacity-60">
+            {" "}
+            · {swapped ? "Timeline" : "Live"}
+          </span>
         </span>
       </div>
 
@@ -441,6 +445,9 @@ export function EngagementGauge() {
             </ChartContainer>
 
             {/* Bottom minimap — always 32px, gray, click to swap */}
+            <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground opacity-60">
+              {swapped ? "Live" : "Timeline"}
+            </span>
             <button
               type="button"
               className="w-full cursor-pointer rounded border-0 bg-transparent p-0 text-left outline-none hover:bg-white/[0.03] [&_*]:border-0 [&_*]:outline-none"
