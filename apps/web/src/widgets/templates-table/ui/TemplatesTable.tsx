@@ -60,7 +60,7 @@ export function TemplatesTable() {
   const endItem = Math.min(page * pageSize, totalCount);
 
   const handleRowClick = (template: SetlistTemplate) => {
-    navigate(`/setlisty/${template.id}`);
+    navigate(`/setlist-templates/${template.id}`);
   };
 
   const pageNumbers = useMemo(() => {

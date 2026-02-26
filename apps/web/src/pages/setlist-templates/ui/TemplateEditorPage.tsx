@@ -133,7 +133,7 @@ export function TemplateEditorPage() {
 
   const handleBack = useCallback(async () => {
     await triggerSave();
-    navigate("/setlisty");
+    navigate("/setlist-templates");
   }, [triggerSave, navigate]);
 
   if (!template) {
