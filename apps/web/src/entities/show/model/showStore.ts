@@ -303,14 +303,34 @@ export const useShowStore = create<ShowState>((set, get) => ({
   },
 
   beginPerformance: () =>
-    set((state) => ({
-      show: {
-        ...state.show,
-        status: "live" as const,
-        actual_start: new Date().toISOString(),
-      },
-      activityLog: [createLogEntry("\u25B6", "Koncert rozpocz\u0119ty"), ...state.activityLog],
-    })),
+    set((state) => {
+      const now = new Date().toISOString();
+      const firstPlanned = state.timeline.find((e) => e.status === "planned");
+
+      const segments = state.show.setlist.segments;
+      const segment = firstPlanned
+        ? segments.find((s) => s.id === firstPlanned.segment_id)
+        : undefined;
+      const segmentName = segment?.name ?? firstPlanned?.segment_id;
+
+      return {
+        show: {
+          ...state.show,
+          status: "live" as const,
+          actual_start: now,
+        },
+        timeline: firstPlanned
+          ? state.timeline.map((e) =>
+              e.id === firstPlanned.id ? { ...e, status: "active" as const, started_at: now } : e,
+            )
+          : state.timeline,
+        activityLog: [
+          ...(firstPlanned ? [createLogEntry("\u25B6", `${segmentName} start`)] : []),
+          createLogEntry("\u25B6", "Koncert rozpocz\u0119ty"),
+          ...state.activityLog,
+        ],
+      };
+    }),
 
   holdShow: () =>
     set((state) => ({

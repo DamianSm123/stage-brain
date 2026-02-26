@@ -321,10 +321,7 @@ export function EngagementGauge() {
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Energia
-          <span className="font-normal opacity-60">
-            {" "}
-            · {swapped ? "Timeline" : "Live"}
-          </span>
+          <span className="font-normal opacity-60"> · {swapped ? "Timeline" : "Live"}</span>
         </span>
       </div>
 
