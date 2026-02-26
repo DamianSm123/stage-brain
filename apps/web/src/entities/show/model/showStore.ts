@@ -76,10 +76,30 @@ export const useShowStore = create<ShowState>((set, get) => ({
   engagementHistory: MOCK_ENGAGEMENT_HISTORY,
 
   pushEngagement: (point) =>
-    set((state) => ({
-      engagementHistory: [...state.engagementHistory, point],
-      engagement: { ...state.engagement, score: point.score, timestamp: point.timestamp },
-    })),
+    set((state) => {
+      const history = [...state.engagementHistory, point];
+
+      // Derive trend from last 10 points
+      let trend = state.engagement.trend;
+      if (history.length >= 6) {
+        const recent5 = history.slice(-5);
+        const prev5 = history.slice(-10, -5);
+        const avgRecent = recent5.reduce((sum, p) => sum + p.score, 0) / recent5.length;
+        const avgPrev = prev5.reduce((sum, p) => sum + p.score, 0) / prev5.length;
+        const diff = avgRecent - avgPrev;
+        trend = diff > 3 ? "rising" : diff < -3 ? "falling" : "stable";
+      }
+
+      return {
+        engagementHistory: history,
+        engagement: {
+          ...state.engagement,
+          score: point.score,
+          timestamp: point.timestamp,
+          trend,
+        },
+      };
+    }),
 
   setShowStatus: (status) =>
     set((state) => ({

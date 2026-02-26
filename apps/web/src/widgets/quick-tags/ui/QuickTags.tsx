@@ -19,7 +19,7 @@ const PRESET_TAGS = [
   { tag: "Low energy", icon: "\u2193", label: "Niska energia" },
   { tag: "Tech issue", icon: "\u26A0", label: "Problem techniczny" },
   { tag: "Improv", icon: "\uD83C\uDFA4", label: "Improwizacja" },
-  { tag: "Great!", icon: "\u2605", label: "\u015Awietny moment" },
+  { tag: "Great!", icon: "\u2605", label: "Świetny moment" },
   { tag: "Przebudowa", icon: "\uD83D\uDD27", label: "Przebudowa sceny" },
 ] as const;
 
@@ -107,9 +107,9 @@ export function QuickTags() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>W\u0142asny tag</DialogTitle>
+            <DialogTitle>Własny tag</DialogTitle>
             <DialogDescription>
-              Wpisz tag (max {CUSTOM_TAG_MAX_LENGTH} znak\u00F3w)
+              Wpisz własny tag (max {CUSTOM_TAG_MAX_LENGTH} znaków)
             </DialogDescription>
           </DialogHeader>
 
@@ -123,7 +123,7 @@ export function QuickTags() {
             <Input
               value={customText}
               onChange={(e) => setCustomText(e.target.value.slice(0, CUSTOM_TAG_MAX_LENGTH))}
-              placeholder="np. \u015Awietna reakcja"
+              placeholder="np. Problemy z dźwiękiem"
               maxLength={CUSTOM_TAG_MAX_LENGTH}
               autoFocus
               className="min-h-[44px]"

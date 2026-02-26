@@ -65,6 +65,20 @@ export function deriveTagAnnotations(tags: OperatorTag[]): ChartAnnotation[] {
   });
 }
 
+/**
+ * Find tags whose timestamp falls within ±tolerance of the given time.
+ */
+export function getTagsAtTime(
+  time: number,
+  annotations: ChartAnnotation[],
+  toleranceMs = 5_000,
+): ChartAnnotation[] {
+  return annotations.filter((a) => {
+    const t = new Date(a.timestamp).getTime();
+    return Math.abs(t - time) <= toleranceMs;
+  });
+}
+
 export function computeTimeDomain(show: Show): [number, number] {
   const start = show.actual_start
     ? new Date(show.actual_start).getTime()
@@ -76,16 +90,27 @@ export function computeTimeDomain(show: Show): [number, number] {
 }
 
 const MIN = 60_000;
+const SEC = 1_000;
 
 // Candidate intervals in ascending order (ms).
 // computeRoundTicks picks the smallest one that produces <= MAX_TICKS.
-const TICK_INTERVALS = [2 * MIN, 5 * MIN, 10 * MIN, 15 * MIN, 30 * MIN, 60 * MIN];
+const TICK_INTERVALS = [
+  15 * SEC,
+  30 * SEC,
+  1 * MIN,
+  2 * MIN,
+  5 * MIN,
+  10 * MIN,
+  15 * MIN,
+  30 * MIN,
+  60 * MIN,
+];
 const MAX_TICKS = 10;
 
 /**
  * Generate round clock-time ticks for a visible time window.
  * Picks the smallest interval that fits <= MAX_TICKS, then snaps to
- * round multiples (e.g. :00, :10, :20, :30).
+ * round multiples (e.g. :00, :15, :30, :45).
  */
 export function computeRoundTicks(visibleStart: number, visibleEnd: number): number[] {
   const duration = visibleEnd - visibleStart;
@@ -107,46 +132,4 @@ export function computeRoundTicks(visibleStart: number, visibleEnd: number): num
     ticks.push(t);
   }
   return ticks;
-}
-
-const ZOOM_FACTOR = 2;
-export const MIN_WINDOW_MS = 3 * MIN;
-
-/**
- * Compute a new visible domain after zoom in/out.
- * Anchor ratio is based on "now"'s position in the FULL concert domain,
- * so the chart fills naturally as the concert progresses.
- */
-export function zoomDomain(
-  current: [number, number],
-  fullDomain: [number, number],
-  anchor: number,
-  direction: 1 | -1,
-): [number, number] {
-  const currentSpan = current[1] - current[0];
-  const fullSpan = fullDomain[1] - fullDomain[0];
-  const newSpan = direction === 1 ? currentSpan / ZOOM_FACTOR : currentSpan * ZOOM_FACTOR;
-
-  // Clamp span; snap to full when close (within 5%)
-  const clampedSpan = Math.max(MIN_WINDOW_MS, Math.min(newSpan, fullSpan));
-  if (clampedSpan >= fullSpan * 0.95) {
-    return [fullDomain[0], fullDomain[1]];
-  }
-
-  // Anchor ratio based on full concert domain — natural position
-  const anchorRatio = Math.max(0, Math.min(1, (anchor - fullDomain[0]) / fullSpan));
-  let newStart = anchor - anchorRatio * clampedSpan;
-  let newEnd = newStart + clampedSpan;
-
-  // Clamp to full domain
-  if (newStart < fullDomain[0]) {
-    newStart = fullDomain[0];
-    newEnd = newStart + clampedSpan;
-  }
-  if (newEnd > fullDomain[1]) {
-    newEnd = fullDomain[1];
-    newStart = newEnd - clampedSpan;
-  }
-
-  return [newStart, newEnd];
 }

@@ -12,6 +12,7 @@ export {
   selectBufferToCurfew,
   selectCompletedCount,
   selectIsInDecisionWindow,
+  selectIsSetlistComplete,
   selectNextPlannedSegment,
   selectProjectedEnd,
   selectShowTimeState,

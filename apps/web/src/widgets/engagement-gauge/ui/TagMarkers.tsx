@@ -1,6 +1,8 @@
 import type { ChartAnnotation } from "@/entities/engagement-metric";
 import type { ChartPoint } from "../lib/chartSelectors";
 
+const TAG_COLOR = "#06b6d4"; // cyan-500 — distinct from white segment lines
+
 interface TagMarkersProps {
   annotations: ChartAnnotation[];
   chartPoints: ChartPoint[];
@@ -43,13 +45,25 @@ export function TagMarkers({ annotations, chartPoints, xScale, yScale }: TagMark
 
         return (
           <g key={a.id}>
-            <line x1={cx} y1={cy - 14} x2={cx} y2={cy - 4} stroke="white" strokeOpacity={0.3} />
+            {/* Solid thin line — distinct from dashed white segment lines */}
+            <line
+              x1={cx}
+              y1={cy - 18}
+              x2={cx}
+              y2={cy - 5}
+              stroke={TAG_COLOR}
+              strokeOpacity={0.6}
+              strokeWidth={1}
+            />
+            {/* Dot on the curve */}
+            <circle cx={cx} cy={cy} r={3} fill={TAG_COLOR} fillOpacity={0.9} />
+            {/* Icon above */}
             <text
               x={cx}
-              y={cy - 16}
+              y={cy - 22}
               textAnchor="middle"
-              fontSize={12}
-              fill="white"
+              fontSize={11}
+              fill={TAG_COLOR}
               style={{ pointerEvents: "none" }}
             >
               {a.icon ?? "●"}

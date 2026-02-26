@@ -117,6 +117,12 @@ export function selectCompletedCount(timeline: TimelineEntry[]): number {
   return timeline.filter((e) => e.status === "completed" || e.status === "skipped").length;
 }
 
+export function selectIsSetlistComplete(timeline: TimelineEntry[]): boolean {
+  return (
+    timeline.length > 0 && timeline.every((e) => e.status === "completed" || e.status === "skipped")
+  );
+}
+
 export function selectIsInDecisionWindow(timeline: TimelineEntry[], now: number): boolean {
   const active = selectActiveSegment(timeline);
   if (!active?.started_at) return false;

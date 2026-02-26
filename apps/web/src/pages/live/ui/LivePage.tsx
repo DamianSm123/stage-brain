@@ -1,10 +1,12 @@
-import { selectTotalDelta, useShowStore } from "@/entities/show";
+import { selectIsSetlistComplete, selectTotalDelta, useShowStore } from "@/entities/show";
 import { formatDuration } from "@/shared/lib/formatTime";
 import { ActivityLog } from "@/widgets/activity-log";
 import { AdaptiveTimePanel } from "@/widgets/adaptive-time-panel";
 import { DecisionPanel } from "@/widgets/decision-panel";
 import { EngagementGauge } from "@/widgets/engagement-gauge";
+import { useEngagementSimulator } from "@/widgets/engagement-gauge/lib/useEngagementSimulator";
 import { NowPlaying } from "@/widgets/now-playing";
+import { PostShowCenter } from "@/widgets/post-show-center";
 import { PreShowCenter } from "@/widgets/pre-show-center";
 import { PreShowSidebar } from "@/widgets/pre-show-sidebar";
 import { QuickTags } from "@/widgets/quick-tags";
@@ -20,6 +22,10 @@ export function LivePage() {
 }
 
 function LiveLayout() {
+  useEngagementSimulator();
+  const timeline = useShowStore((s) => s.timeline);
+  const isSetlistComplete = selectIsSetlistComplete(timeline);
+
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       <LiveTopBar />
@@ -30,12 +36,18 @@ function LiveLayout() {
           <SegmentTimeline />
         </div>
 
-        {/* Column 2: Time + Now Playing + Engagement + Tags */}
+        {/* Column 2: Center */}
         <div className="flex flex-col gap-3 overflow-y-auto p-4">
-          <AdaptiveTimePanel />
-          <NowPlaying />
-          <EngagementGauge />
-          <QuickTags />
+          {isSetlistComplete ? (
+            <PostShowCenter />
+          ) : (
+            <>
+              <AdaptiveTimePanel />
+              <NowPlaying />
+              <EngagementGauge />
+              <QuickTags />
+            </>
+          )}
         </div>
 
         {/* Column 3: Decision Panel */}

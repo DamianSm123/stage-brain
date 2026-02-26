@@ -296,10 +296,10 @@ export const MOCK_ACTIVITY_LOG: ActivityLogEntry[] = [
   },
 ];
 
-// --- Engagement History (~60 points, 1 per minute, covering ~60 min from show start) ---
-// Realistic energy curve: warm-up → first songs build → ballad dip → peak
+// --- Engagement History ---
+// Keyframes: 1 value per minute. Interpolated below to ~1 point/3s for smooth minimap.
 
-const ENGAGEMENT_SCORES = [
+const ENGAGEMENT_KEYFRAMES = [
   // 0-10 min: warm-up / DJ set, energy building slowly
   25, 28, 30, 33, 35, 38, 40, 42, 44, 45,
   // 10-20 min: crowd warming up, anticipation
@@ -314,7 +314,22 @@ const ENGAGEMENT_SCORES = [
   68, 70, 72, 70, 73, 75, 72, 74, 76, 78,
 ];
 
-export const MOCK_ENGAGEMENT_HISTORY: TimestampedScore[] = ENGAGEMENT_SCORES.map((score, i) => ({
-  timestamp: minutesAgo(ENGAGEMENT_SCORES.length - i),
-  score,
-}));
+function densifyEngagementHistory(keyframes: number[]): TimestampedScore[] {
+  const intervalSec = 3;
+  const totalSec = keyframes.length * 60;
+  const points: TimestampedScore[] = [];
+  for (let s = 0; s < totalSec; s += intervalSec) {
+    const minutePos = s / 60;
+    const idx = Math.min(Math.floor(minutePos), keyframes.length - 2);
+    const frac = minutePos - idx;
+    const base = keyframes[idx] + frac * (keyframes[idx + 1] - keyframes[idx]);
+    // Deterministic micro-noise so curve isn't perfectly linear between keyframes
+    const noise = Math.sin(s * 0.17) * 1.2 + Math.cos(s * 0.31) * 0.8;
+    const score = Math.round(Math.max(5, Math.min(100, base + noise)));
+    points.push({ timestamp: minutesAgo((totalSec - s) / 60), score });
+  }
+  return points;
+}
+
+export const MOCK_ENGAGEMENT_HISTORY: TimestampedScore[] =
+  densifyEngagementHistory(ENGAGEMENT_KEYFRAMES);
