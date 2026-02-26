@@ -25,7 +25,10 @@ export function ShowCard() {
   const setGenre = useShowEditorStore((s) => s.setGenre);
   const touchField = useShowEditorStore((s) => s.touchField);
 
+  const showId = useShowEditorStore((s) => s.showId);
+
   const errors = getDetailsValidationErrors({
+    showId,
     showName,
     date: undefined,
     startTime: "",

@@ -41,7 +41,10 @@ export function VenueCard() {
   const endTime = useShowEditorStore((s) => s.endTime);
   const curfew = useShowEditorStore((s) => s.curfew);
 
+  const showId = useShowEditorStore((s) => s.showId);
+
   const errors = getDetailsValidationErrors({
+    showId,
     showName,
     date,
     startTime,
