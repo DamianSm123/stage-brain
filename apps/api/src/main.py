@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.database import engine
 from src.core.settings import settings
+from src.routers import calibrations, segments, shows, templates, venues
 
 
 @asynccontextmanager
@@ -23,6 +24,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(shows.router, prefix="/api/v1")
+app.include_router(venues.router, prefix="/api/v1")
+app.include_router(calibrations.router, prefix="/api/v1")
+app.include_router(segments.router, prefix="/api/v1")
+app.include_router(templates.router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health")
