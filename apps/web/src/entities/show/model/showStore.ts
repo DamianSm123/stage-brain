@@ -324,6 +324,8 @@ export const useShowStore = create<ShowState>((set, get) => ({
               e.id === firstPlanned.id ? { ...e, status: "active" as const, started_at: now } : e,
             )
           : state.timeline,
+        recommendations: MOCK_RECOMMENDATIONS,
+        recoveryScenarios: MOCK_RECOVERY_SCENARIOS,
         activityLog: [
           ...(firstPlanned ? [createLogEntry("\u25B6", `${segmentName} start`)] : []),
           createLogEntry("\u25B6", "Koncert rozpocz\u0119ty"),
